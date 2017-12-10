@@ -32,12 +32,12 @@ sub HomeScreen_RowList_ItemFocused()
         return
     end if
 
-    ' TODO: here be magic numbers
+    ' TODO: here be magic numbers, some of these translations seem change if the rowList translation changes???
     if((m.balloon_row = invalid) or (m.balloon_row <> focus[0])) then
         m.balloon_row = focus[0]
         cell_height = m.row_list.rowHeights[m.balloon_row]
         cell_width = m.row_list.rowItemSize[m.balloon_row][0] + m.row_list.rowItemSpacing[0][0]
-        m.balloon.translation = [ cell_width+8, cell_height+26 ]
+        m.balloon.translation = [ cell_width+8, cell_height+30 ]
     end if
 
     cell_width = m.row_list.rowItemSize[m.balloon_row][0] + m.row_list.rowItemSpacing[0][0]
