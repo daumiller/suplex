@@ -40,42 +40,113 @@ function PlexServer_TranscodeImage(server, path, width, height)
     })
 end function
 
-' == LOAD SECTIONS =================================================================================================================
-function PlexServer_LibrarySections(server)
-    url_base     = "http://" + server["Host"] + ":" + server["Port"]
-    url_sections = url_base + "/library/sections"
-    response = Network_HttpGet(url_sections)
+' == LOAD LIBRARY ==================================================================================================================
+function PlexServer_LoadLibrary_MediaContainer(server, path)
+    url_base      = "http://" + server["Host"] + ":" + server["Port"]
+    url_container = url_base + path
+    response = Network_HttpGet(url_container)
+
     if(response = invalid) then
-        Print("ERROR: PlexServer_LibrarySections() -- invalid response for " + url)
+        Print("ERROR: PlexServer_LoadLibrary_MediaContainer() -- invalid response")
+        Print("       for " + url_container)
         return invalid
     end if
     if((response.response_code <> 200) or (response.failure_reason <> "OK")) then
-        Print("ERROR: PlexServer_LibrarySections() -- received " + response.response_code.ToStr() + " '" + response.failure_reason + "'")
+        Print("ERROR: PlexServer_LoadLibrary_MediaContainer() -- received " + response.response_code.ToStr() + " '" + response.failure_reason + "'")
+        Print("       for " + url_container)
         return invalid
     end if
 
-    xml = CreateObject("roXMLElement")
-    if(xml.Parse(response.content) = false) then
-        Print("ERROR: PlexServer_LibrarySections() -- failed parsing response XML")
+    xml_root = CreateObject("roXMLElement")
+    if(xml_root.Parse(response.content) = false) then
+        Print("ERROR: PlexServer_LoadLibrary_MediaContainer() -- failed parsing response XML")
+        Print("       for " + url_container)
         return invalid
     end if
 
-    directories = xml.GetChildElements()
-    if(directories = invalid)   then return []
-    if(directories.Count() = 0) then return []
+    if(xml_root.GetName() <> "MediaContainer") then
+        Print("ERROR: PlexServer_LoadLibrary_MediaContainer() -- expected MediaContainer, found '" + xml_root.GetName() + "'")
+        Print("       for " + url_container)
+        return invalid
+    end if
 
-    library_sections = CreateObject("roList")
-    for each directory in directories
-        library_sections.AddTail({
-            "title"     : directory@title,
-            "media_type": directory@type,
-            "key"       : directory@key,
-            "thumb"     : url_base + directory@thumb
-        })
+    xml_entries = xml_root.GetChildElements()
+    if(xml_entries = invalid)   then return []
+    if(xml_entries.Count() = 0) then return []
+
+    ' type: section, directory, entry
+    ' subtype: movie, season, episode, ...
+    ' key: full-path (prepend /library/sections/ to type.section)
+    ' title: (grandparentTitle + ": " +) (parentTitle + ": " + ) title
+    ' thumb: grandparentThumb || parentThumb || thumb
+    ' time_current: viewOffset
+    ' time_total: duration
+    ' uuid: section-uuid
+
+    ' Directory
+    '     key="10"
+    '     type="movie"
+    '     title="Animated Movies"
+    '     thumb="/:/resources/movie.png"
+    '     uuid="..."
+
+    ' Directory
+    '     librarySectionID="7"
+    '     key="/library/metadata/29126/children"
+    '     type="season"
+    '     title="Season 1"                                 parentTitle="The Orville"
+    '     thumb="/library/metadata/29126/thumb/1512105373" parentThumb="/library/metadata/29125/thumb/1512105373"
+
+    ' Video
+    '     key="/library/metadata/28477"
+    '     type="episode"
+    '     title="Will the Universe Expand Forever"         grandparentTitle="PBS Space Time"
+    '     thumb="/library/metadata/28477/thumb/1493299680" grandparentThumb="/library/metadata/28074/thumb/1493299681"
+    '     viewOffset="169185" duration="790013"
+
+    entry_list = CreateObject("roList")
+    for each xml_entry in xml_entries
+        item = {
+            "key"    : xml_entry@key,
+            "subtype": xml_entry@type,
+            "title"  : xml_entry@title,
+            "thumb"  : xml_entry@thumb
+        }
+
+        if(xml_entry.HasAttribute("parentTitle"     )) then item["title"] = xml_entry@parentTitle      + ": " + item["title"]
+        if(xml_entry.HasAttribute("grandparentTitle")) then item["title"] = xml_entry@grandparentTitle + ": " + item["title"]
+        if(xml_entry.HasAttribute("parentThumb"     )) then item["thumb"] = xml_entry@parentThumb
+        if(xml_entry.HasAttribute("grandparentThumb")) then item["thumb"] = xml_entry@grandparentThumb
+
+        xml_entry_type = xml_entry.GetName()
+        if(xml_entry_type = "Directory") then
+            if(xml_entry.HasAttribute("librarySectionID")) then
+                item["type"] = "Directory"
+            elseif((xml_entry@key).Left(1) = "/") then
+                Print("ERROR: PlexServer_LoadLibrary_MediaContainer() -- entry not a section, or in a section")
+                stop
+            elseif(xml_entry@uuid = invalid) then
+                item["type"] = "SectionLink"
+                item["key" ] = "/library/" + item["key"]
+            else
+                item["type"] = "Section"
+                item["uuid"] = xml_entry@uuid
+                item["key" ] = "/library/sections/" + item["key"]
+            end if
+        elseif(xml_entry_type = "Video") then
+            item["type"] = "Video"
+            if(xml_entry.HasAttribute("viewOffset")) then item["time_current"] = (xml_entry@viewOffset).ToInt() / 1000
+            if(xml_entry.HasAttribute("duration"  )) then item["time_total"  ] = (xml_entry@duration).ToInt()   / 1000
+        else
+            Print("ERROR: PlexServer_LoadLibrary_MediaContainer() -- skipping unsupported type " + xml_entry_type)
+            stop
+        end if
+
+        entry_list.AddTail(item)
     end for
 
-    library_sections.Reset()
-    return library_sections
+    entry_list.Reset()
+    return entry_list
 end function
 
 ' == DISCOVERY =====================================================================================================================

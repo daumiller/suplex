@@ -7,10 +7,14 @@
         <field id="itemContent" type="node"  onChange="ChangedContent"/>
         <field id="itemName"    type="string"/>
         <field id="itemType"    type="string"/>
-        <field id="itemAction"  type="string"/>
+        <field id="itemSubtype" type="string"/>
+        <field id="itemKey"     type="string"/>
+        <field id="itemResume"  type="integer" value="0"/>
     </interface>
 
     <children>
         <Poster id="poster" loadDisplayMode="scaleToFill"/>
+        <Rectangle id="rectUnwatched" color="0x000000FF" opacity="0.5" visible="false"/>
+        <Rectangle id="rectWatched"   color="0xFFA500FF" opacity="0.5" visible="false"/>
     </children>
 </component>

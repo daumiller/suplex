@@ -10,10 +10,10 @@
 
     <children>
         <Poster id="attachLeft"  uri="pkg:/image/balloon-left.png"  loadSync="true" blendColor="0xDDDDDDFF" translation="[  0,0]" visible="true" />
-        <Poster id="attachRight" uri="pkg:/image/balloon-right.png" loadSync="true" blendColor="0xDDDDDDFF" translation="[464,0]" visible="false"/>
-        <Rectangle translation="[30,30]" color="0x000000FF" width="512" height="64" opacity="0.5"/>
-        <Rectangle translation="[24,24]" color="0xDDDDDDFF" width="512" height="64"/>
-        <Rectangle translation="[30,30]" color="0xDDDDDDFF" width="500" height="52"/>
-        <Label id="lblText" translation="[36,36]" color="0x000000FF" font="font:LargeBoldSystemFont" width="488" height="40" vertAlign="center" horizAlign="center" text="" />
+        <Poster id="attachRight" uri="pkg:/image/balloon-right.png" loadSync="true" blendColor="0xDDDDDDFF" translation="[592,0]" visible="false"/>
+        <Rectangle translation="[30,30]" color="0x000000FF" width="640" height="96" opacity="0.5"/>
+        <Rectangle translation="[24,24]" color="0xDDDDDDFF" width="640" height="96"/>
+        <Rectangle translation="[30,30]" color="0xDDDDDDFF" width="628" height="84"/>
+        <Label id="lblText" translation="[36,36]" color="0x000000FF" font="font:LargeBoldSystemFont" width="616" height="72" vertAlign="center" horizAlign="center" wrap="true" text="" />
     </children>
 </component>

@@ -17,10 +17,9 @@ function HomeScreen_Create(bg_image="", bg_color="0x1F1F1FFF", queue=invalid)
 
     home_screen.Loop     = HomeScreen_Loop
     home_screen.Populate = HomeScreen_Populate
-    home_screen._Populate_LibrarySections = HomeScreen_Populate_LibrarySections
-    home_screen._Populate_Dummy           = HomeScreen_Populate_Dummy
-    home_screen._Populate_Empty           = HomeScreen_Populate_Empty
-    home_screen._RowList_ItemFocused      = HomeScreen_RowList_ItemFocused
+    home_screen._Populate_LibraryRow = HomeScreen_Populate_LibraryRow
+    home_screen._AddRowContent       = HomeScreen_AddRowContent
+    home_screen._RowList_ItemFocused = HomeScreen_RowList_ItemFocused
 
     return home_screen
 end function
@@ -79,93 +78,139 @@ sub HomeScreen_Loop()
     end while
 end sub
 
-sub HomeScreen_Populate_LibrarySections(server)
-    library_sections = PlexServer_LibrarySections(server)
+'sub HomeScreen_Populate_Dummy(server, count)
+'    row_heights = CreateObject("roArray", m.row_list.rowHeights.Count() + 1, true)
+'    row_heights.Append(m.row_list.rowHeights)
+'    row_heights.Push(274 + 64)
+'    m.row_list.rowHeights = row_heights
+'
+'    row_item_size = CreateObject("roArray", m.row_list.rowItemSize.Count() + 1, true)
+'    row_item_size.Append(m.row_list.rowItemSize)
+'    row_item_size.Push([192,274])
+'    m.row_list.rowItemSize = row_item_size
+'
+'    dummy_row = CreateObject("roSGNode", "ContentNode")
+'    dummy_row.SetField("title", "Dummy Row")
+'    poster_url = PlexServer_TranscodeImage(server, "/library/metadata/29135/thumb/1510906164", 192, 274)
+'    for index = 1 to count step 1
+'        dummy_item = CreateObject("roSGNode", "ContentNode")
+'        dummy_item.SetFields({
+'            "HDPosterUrl"          : poster_url,
+'            "Title"                : "Dummy Item " + index.ToStr(),
+'            "ShortDescriptionLine1": "dummy",
+'            "ShortDescriptionLine2": "noop"
+'        })
+'        dummy_row.AppendChild(dummy_item)
+'    end for
+'
+'    if(m.row_list.content = invalid) then m.row_list.content = CreateObject("roSGNode", "ContentNode")
+'    m.row_list.content.AppendChild(dummy_row)
+'end sub
 
-    row_heights = CreateObject("roArray", m.row_list.rowHeights.Count() + 1, true)
-    row_heights.Append(m.row_list.rowHeights)
-    row_heights.Push(192 + 64)
-    m.row_list.rowHeights = row_heights
-
-    row_item_size = CreateObject("roArray", m.row_list.rowItemSize.Count() + 1, true)
-    row_item_size.Append(m.row_list.rowItemSize)
-    row_item_size.Push([192,192])
-    m.row_list.rowItemSize = row_item_size
-
-    library_section_row = CreateObject("roSGNode", "ContentNode")
-    library_section_row.SetField("title", "Library Sections")
-    for each section in library_sections
-        library_section_item = CreateObject("roSGNode", "ContentNode")
-        library_section_item.SetFields({
-            ' from PlexServer.brs     -> PlexServer_LibrarySections()
-            ' to   HomeScreenItem.brs -> ItemContentChanged()
-            "HDPosterUrl"          : section.thumb,      ' Poster URL
-            "Title"                : section.title,      ' Name
-            "ShortDescriptionLine1": "library-section",  ' Type
-            "ShortDescriptionLine2": section.key,        ' Action
-        })
-        library_section_row.AppendChild(library_section_item)
-    end for
-
-    if(m.row_list.content = invalid) then m.row_list.content = CreateObject("roSGNode", "ContentNode")
-    m.row_list.content.AppendChild(library_section_row)
-end sub
-
-sub HomeScreen_Populate_Dummy(server, count)
-    row_heights = CreateObject("roArray", m.row_list.rowHeights.Count() + 1, true)
-    row_heights.Append(m.row_list.rowHeights)
-    row_heights.Push(274 + 64)
-    m.row_list.rowHeights = row_heights
-
-    row_item_size = CreateObject("roArray", m.row_list.rowItemSize.Count() + 1, true)
-    row_item_size.Append(m.row_list.rowItemSize)
-    row_item_size.Push([192,274])
-    m.row_list.rowItemSize = row_item_size
-
-    dummy_row = CreateObject("roSGNode", "ContentNode")
-    dummy_row.SetField("title", "Dummy Row")
-    poster_url = PlexServer_TranscodeImage(server, "/library/metadata/29135/thumb/1510906164", 192, 274)
-    for index = 1 to count step 1
-        dummy_item = CreateObject("roSGNode", "ContentNode")
-        dummy_item.SetFields({
-            "HDPosterUrl"          : poster_url,
-            "Title"                : "Dummy Item " + index.ToStr(),
-            "ShortDescriptionLine1": "dummy",
-            "ShortDescriptionLine2": "noop"
-        })
-        dummy_row.AppendChild(dummy_item)
-    end for
-
-    if(m.row_list.content = invalid) then m.row_list.content = CreateObject("roSGNode", "ContentNode")
-    m.row_list.content.AppendChild(dummy_row)
-end sub
-
-sub HomeScreen_Populate_Empty()
-    row_heights = CreateObject("roArray", m.row_list.rowHeights.Count() + 1, true)
-    row_heights.Append(m.row_list.rowHeights)
-    row_heights.Push(64 + 64)
-    m.row_list.rowHeights = row_heights
-
-    row_item_size = CreateObject("roArray", m.row_list.rowItemSize.Count() + 1, true)
-    row_item_size.Append(m.row_list.rowItemSize)
-    row_item_size.Push([64,64])
-    m.row_list.rowItemSize = row_item_size
-
-    empty_row = CreateObject("roSGNode", "ContentNode")
-    empty_row.SetField("title", "Empty Row")
-
-    if(m.row_list.content = invalid) then m.row_list.content = CreateObject("roSGNode", "ContentNode")
-    m.row_list.content.AppendChild(empty_row)
-end sub
+'sub HomeScreen_Populate_Empty()
+'    row_heights = CreateObject("roArray", m.row_list.rowHeights.Count() + 1, true)
+'    row_heights.Append(m.row_list.rowHeights)
+'    row_heights.Push(64 + 64)
+'    m.row_list.rowHeights = row_heights
+'
+'    row_item_size = CreateObject("roArray", m.row_list.rowItemSize.Count() + 1, true)
+'    row_item_size.Append(m.row_list.rowItemSize)
+'    row_item_size.Push([64,64])
+'    m.row_list.rowItemSize = row_item_size
+'
+'    empty_row = CreateObject("roSGNode", "ContentNode")
+'    empty_row.SetField("title", "Empty Row")
+'
+'    if(m.row_list.content = invalid) then m.row_list.content = CreateObject("roSGNode", "ContentNode")
+'    m.row_list.content.AppendChild(empty_row)
+'end sub
 
 sub HomeScreen_Populate(server)
-    m._Populate_LibrarySections(server)
-    m._Populate_Dummy(server, 10)
-    m._Populate_Dummy(server, 5)
-    m._Populate_Empty()
+    library_rows = PlexServer_LoadLibrary_MediaContainer(server, "/library")
+    for each item in library_rows
+        m._Populate_LibraryRow(item.title, item.key, server)
+    end for
 
     m.row_list.SetFocus(true)
     m.row_list.ObserveField("rowItemFocused" , m.queue)
     m.row_list.ObserveField("scrollingStatus", m.queue)
     m._RowList_ItemFocused()
+end sub
+
+sub HomeScreen_AddRowContent(content, width=192, height=192, padding_y=64)
+    row_heights = CreateObject("roArray", m.row_list.rowHeights.Count() + 1, true)
+    row_heights.Append(m.row_list.rowHeights)
+    row_heights.Push(height + padding_y)
+    m.row_list.rowHeights = row_heights
+
+    row_item_size = CreateObject("roArray", m.row_list.rowItemSize.Count() + 1, true)
+    row_item_size.Append(m.row_list.rowItemSize)
+    row_item_size.Push([width,height])
+    m.row_list.rowItemSize = row_item_size
+
+    if(m.row_list.content = invalid) then m.row_list.content = CreateObject("roSGNode", "ContentNode")
+    m.row_list.content.AppendChild(content)
+end sub
+
+sub HomeScreen_Populate_LibraryRow(title, key, server)
+    parsed_items = PlexServer_LoadLibrary_MediaContainer(server, key)
+    if(parsed_items = invalid) then return
+
+    if(parsed_items.Count() = 0) then
+        empty_row = CreateObject("roSGNode", "ContentNode")
+        empty_row.SetField("title", title)
+        m._AddRowContent(empty_row)
+        return
+    end if
+
+    row_container = CreateObject("roSGNode", "ContentNode")
+    row_container.SetField("title", title)
+
+    row_item_size = [192, 274]
+    if(parsed_items[0]["type"] = "Section") then row_item_size = [192, 192]
+
+    for each parsed_item in parsed_items
+        ' /---------\
+        ' | MAPPING |
+        ' \---------/
+        '
+        ' from PlexServer.brs     -> PlexServer_LoadLibrary_MediaContainer
+        ' to   HomeScreenItem.brs -> ItemContentChanged()
+        ' fields must map to one of: https://sdkdocs.roku.com/display/sdkdoc/Content+Meta-Data
+        '
+        ' type            -> ShortDescriptionLine1  :  [ "Section", "Directory", "Video", ... ]
+        ' subtype         -> ShortDescriptionLine2  :  [ "movie", "season", "episode", ... ]
+        ' key             -> FHDPosterUrl           :  full, server-relative, path to entry
+        ' thumb           -> HDPosterUrl            :  full-sized thumbnail url
+        ' thumb.sized     -> SDPosterUrl            :  thumbnail resized to row_item_size url
+        ' title           -> Title                  :  title
+        ' row_item_size.x -> MinBandwidth           :  resized thumbnail width
+        ' row_item_size.y -> MaxBandwidth           :  resized thumbnail height
+        ' time_current    -> BookmarkPosition       :  current position (on deck items)
+        ' time_total      -> Length                 :  total length     (on deck items)
+        ' uuid            -> ReleaseDate            :  uuid             (section items)
+
+        row_item = CreateObject("roSGNode", "ContentNode")
+
+        row_item.SetFields({
+            "ShortDescriptionLine1": parsed_item["type"],
+            "ShortDescriptionLine2": parsed_item["subtype"],
+            "FHDPosterUrl"         : parsed_item["key"],
+            "HDPosterUrl"          : parsed_item["thumb"],
+            "SDPosterUrl"          : PlexServer_TranscodeImage(server, parsed_item["thumb"], row_item_size[0], row_item_size[1]),
+            "Title"                : parsed_item["title"]
+            "MinBandwidth"         : row_item_size[0],
+            "MaxBandwidth"         : row_item_size[1],
+            "BookmarkPosition"     : 0,
+            "Length"               : 0
+        })
+
+        if(parsed_item.DoesExist("time_current")) then row_item.SetField("BookmarkPosition", parsed_item["time_current"])
+        if(parsed_item.DoesExist("time_total"  )) then row_item.SetField("Length"          , parsed_item["time_total"  ])
+        if(parsed_item.DoesExist("uuid"        )) then row_item.SetField("ReleaseDate"     , parsed_item["uuid"        ])
+
+        row_container.AppendChild(row_item)
+    end for
+
+    m._AddRowContent(row_container, row_item_size[0], row_item_size[1])
 end sub
