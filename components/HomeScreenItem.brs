@@ -19,6 +19,12 @@ sub ChangedContent()
     ' time_total      -> Length                 :  total length     (on deck items)
     ' uuid            -> ReleaseDate            :  uuid             (section items)
 
+    if(m.top.itemContent.MaxBandwidth = m.top.itemContent.MinBandwidth) then
+        m.poster.loadingBitmapUri = "pkg:/image/loading-square.png"
+    else
+        m.poster.loadingBitmapUri = "pkg:/image/loading-poster.png"
+    end if
+
     m.poster.width    = m.top.itemContent.MinBandwidth
     m.poster.height   = m.top.itemContent.MaxBandwidth
     m.poster.uri      = m.top.itemContent.SDPosterUrl

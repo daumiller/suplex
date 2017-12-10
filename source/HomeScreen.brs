@@ -18,6 +18,7 @@ function HomeScreen_Create(bg_image="", bg_color="0x1F1F1FFF", queue=invalid)
     home_screen.Loop     = HomeScreen_Loop
     home_screen.Populate = HomeScreen_Populate
     home_screen._Populate_LibraryRow = HomeScreen_Populate_LibraryRow
+    home_screen._Populate_Links      = HomeScreen_Populate_Links
     home_screen._AddRowContent       = HomeScreen_AddRowContent
     home_screen._RowList_ItemFocused = HomeScreen_RowList_ItemFocused
 
@@ -78,58 +79,12 @@ sub HomeScreen_Loop()
     end while
 end sub
 
-'sub HomeScreen_Populate_Dummy(server, count)
-'    row_heights = CreateObject("roArray", m.row_list.rowHeights.Count() + 1, true)
-'    row_heights.Append(m.row_list.rowHeights)
-'    row_heights.Push(274 + 64)
-'    m.row_list.rowHeights = row_heights
-'
-'    row_item_size = CreateObject("roArray", m.row_list.rowItemSize.Count() + 1, true)
-'    row_item_size.Append(m.row_list.rowItemSize)
-'    row_item_size.Push([192,274])
-'    m.row_list.rowItemSize = row_item_size
-'
-'    dummy_row = CreateObject("roSGNode", "ContentNode")
-'    dummy_row.SetField("title", "Dummy Row")
-'    poster_url = PlexServer_TranscodeImage(server, "/library/metadata/29135/thumb/1510906164", 192, 274)
-'    for index = 1 to count step 1
-'        dummy_item = CreateObject("roSGNode", "ContentNode")
-'        dummy_item.SetFields({
-'            "HDPosterUrl"          : poster_url,
-'            "Title"                : "Dummy Item " + index.ToStr(),
-'            "ShortDescriptionLine1": "dummy",
-'            "ShortDescriptionLine2": "noop"
-'        })
-'        dummy_row.AppendChild(dummy_item)
-'    end for
-'
-'    if(m.row_list.content = invalid) then m.row_list.content = CreateObject("roSGNode", "ContentNode")
-'    m.row_list.content.AppendChild(dummy_row)
-'end sub
-
-'sub HomeScreen_Populate_Empty()
-'    row_heights = CreateObject("roArray", m.row_list.rowHeights.Count() + 1, true)
-'    row_heights.Append(m.row_list.rowHeights)
-'    row_heights.Push(64 + 64)
-'    m.row_list.rowHeights = row_heights
-'
-'    row_item_size = CreateObject("roArray", m.row_list.rowItemSize.Count() + 1, true)
-'    row_item_size.Append(m.row_list.rowItemSize)
-'    row_item_size.Push([64,64])
-'    m.row_list.rowItemSize = row_item_size
-'
-'    empty_row = CreateObject("roSGNode", "ContentNode")
-'    empty_row.SetField("title", "Empty Row")
-'
-'    if(m.row_list.content = invalid) then m.row_list.content = CreateObject("roSGNode", "ContentNode")
-'    m.row_list.content.AppendChild(empty_row)
-'end sub
-
 sub HomeScreen_Populate(server)
     library_rows = PlexServer_LoadLibrary_MediaContainer(server, "/library")
     for each item in library_rows
         m._Populate_LibraryRow(item.title, item.key, server)
     end for
+    m._Populate_Links()
 
     m.row_list.SetFocus(true)
     m.row_list.ObserveField("rowItemFocused" , m.queue)
@@ -211,6 +166,38 @@ sub HomeScreen_Populate_LibraryRow(title, key, server)
 
         row_container.AppendChild(row_item)
     end for
+
+    m._AddRowContent(row_container, row_item_size[0], row_item_size[1])
+end sub
+
+sub HomeScreen_Populate_Links()
+    row_container = CreateObject("roSGNode", "ContentNode")
+    row_container.SetField("title", "Functions")
+    row_item_size = [192, 192]
+
+    link_search = CreateObject("roSGNode", "ContentNode")
+    link_search.SetFields({
+        "ShortDescriptionLine1": "Link",
+        "ShortDescriptionLine2": "search",
+        "SDPosterUrl"          : "pkg:/image/link-search.png",
+        "Title"                : "Search",
+        "MinBandwidth"         : row_item_size[0],
+        "MaxBandwidth"         : row_item_size[1],
+        "BookmarkPosition"     : 0
+    })
+    row_container.AppendChild(link_search)
+
+    link_settings = CreateObject("roSGNode", "ContentNode")
+    link_settings.SetFields({
+        "ShortDescriptionLine1": "Link",
+        "ShortDescriptionLine2": "settings",
+        "SDPosterUrl"          : "pkg:/image/link-settings.png",
+        "Title"                : "Settings",
+        "MinBandwidth"         : row_item_size[0],
+        "MaxBandwidth"         : row_item_size[1],
+        "BookmarkPosition"     : 0
+    })
+    row_container.AppendChild(link_settings)
 
     m._AddRowContent(row_container, row_item_size[0], row_item_size[1])
 end sub
