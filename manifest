@@ -1,0 +1,23 @@
+title=suplex
+description=Alternate Plex client for Roku
+
+version=1.0.0
+major_version=1
+minor_version=0
+build_version=0
+
+mm_icon_focus_hd=pkg:/image/icon-hd.png
+mm_icon_focus_sd=pkg:/image/icon-sd.png
+
+splash_screen_hd=pkg:/image/splash-hd.png
+splash_screen_sd=pkg:/image/splash-sd.png
+
+# splash_color=#808080
+# splash_min_time=0
+
+splash_rsg_optimization=1
+# though fhd for video has larger support, fhd for UIs is Roku4+ only
+ui_resolutions=hd
+
+bs_prof_enabled=true
+confirm_partner_button=1

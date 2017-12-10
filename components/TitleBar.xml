@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<component name="TitleBar" extends="Group">
+    <script type="text/brightscript" uri="pkg:/components/TitleBar.brs"/>
+
+    <interface>
+        <field id="title"      type="string" onChange="ChangedTitle"  value=""     />
+        <field id="clock"      type="string" onChange="ChangedClock"  value="start"/>
+        <field id="twelveHour" type="bool"   onChange="ChangedTwelve" value="true" />
+    </interface>
+
+    <children>
+        <Rectangle width="1280" height="48" color="0x000000FF" opacity="0.75"/>
+        <Poster uri="pkg:/image/logo-32h.png" loadSync="true" translation="[8,8]"/>
+        <Label id="lblTitle" color="0xFFFFFFFF" font="font:LargeBoldSystemFont" height="48" vertAlign="center" width="640" horizAlign="center" translation="[320,0]"/>
+        <Label id="lblClock" color="0xFFFFFFFF" font="font:MediumSystemFont"    height="48" vertAlign="center" width="312" horizAlign="right"  translation="[960,0]"/>
+        <Timer id="timer" repeat="true" duration="20"/>
+    </children>
+</component>

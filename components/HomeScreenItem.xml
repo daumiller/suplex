@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<component name="HomeScreenItem" extends="Group">
+    <script type="text/brightscript" uri="pkg:/components/HomeScreenItem.brs"/>
+
+    <interface>
+        <field id="itemContent" type="node"  onChange="ChangedContent"/>
+        <field id="itemName"    type="string"/>
+        <field id="itemType"    type="string"/>
+        <field id="itemAction"  type="string"/>
+    </interface>
+
+    <children>
+        <Poster id="poster" loadDisplayMode="scaleToFill"/>
+    </children>
+</component>

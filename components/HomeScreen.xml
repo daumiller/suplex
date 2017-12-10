@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<component name="HomeScreen" extends="Scene">
+    <children>
+        <TitleBar id="titleBar" translation="[0,0]"/>
+
+        <RowList id="rowList"
+            translation="[0,56]"
+            itemComponentName="HomeScreenItem"
+            itemSize="[1280,0]"
+            focusXOffset="[48]"
+            rowLabelOffset="[[48,14]]"
+            rowItemSpacing="[[32,0]]"
+            showRowLabel="[true]"
+            showRowCounter="[true]"
+            rowFocusAnimationStyle="fixedFocusWrap"
+            vertFocusAnimationStyle="fixedFocusWrap"
+            numRows="8"
+        />
+
+        <Balloon id="balloon" visible="false"/>
+    </children>
+</component>

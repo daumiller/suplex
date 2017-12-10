@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<component name="Balloon" extends="Group">
+    <script type="text/brightscript" uri="pkg:/components/Balloon.brs"/>
+
+    <interface>
+        <field id="attach" type="string" onChange="ChangedAttach"/>
+        <field id="text"   type="string" onChange="ChangedText"/>
+    </interface>
+
+    <children>
+        <Poster id="attachLeft"  uri="pkg:/image/balloon-left.png"  loadSync="true" blendColor="0xDDDDDDFF" translation="[  0,0]" visible="true" />
+        <Poster id="attachRight" uri="pkg:/image/balloon-right.png" loadSync="true" blendColor="0xDDDDDDFF" translation="[464,0]" visible="false"/>
+        <Rectangle translation="[24,24]" color="0xDDDDDDFF" width="512" height="64"/>
+        <Rectangle translation="[30,30]" color="0xDDDDDDFF" width="500" height="52"/>
+        <Label id="lblText" translation="[36,36]" color="0x000000FF" font="font:LargeBoldSystemFont" width="488" height="40" vertAlign="center" horizAlign="center" text="" />
+    </children>
+</component>
