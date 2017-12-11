@@ -41,6 +41,7 @@ function CurrentTime()
             if(hours > 12) then hours = hours - 12
             suffix = " PM"
         else
+            if(hours = 0) then hours = 12
             suffix = " AM"
         end if
     end if

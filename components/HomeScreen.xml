@@ -15,7 +15,7 @@
             showRowCounter="[true]"
             rowFocusAnimationStyle="fixedFocusWrap"
             vertFocusAnimationStyle="fixedFocusWrap"
-            numRows="8"
+            numRows="5"
         />
 
         <Balloon id="balloon" visible="false"/>

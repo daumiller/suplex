@@ -13,7 +13,7 @@
     </interface>
 
     <children>
-        <Poster id="poster" loadDisplayMode="scaleToFill"/>
+        <Poster id="poster" loadDisplayMode="scaleToFit"/>
         <Rectangle id="rectUnwatched" color="0x000000FF" opacity="0.5" visible="false"/>
         <Rectangle id="rectWatched"   color="0xFFA500FF" opacity="0.5" visible="false"/>
     </children>

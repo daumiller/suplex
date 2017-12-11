@@ -2,13 +2,14 @@ sub Main()
     home_screen = HomeScreen_Create()
     home_screen.scene.SetFocus(true)
 
-    server = PlexServer_Default(home_screen.scene, 5000)
-    if(server = invalid) then
+    plex_server = PlexServer_Default(home_screen.scene, 5000)
+    if(plex_server = invalid) then
         Print("No Plex server found...")
     else
-        Print("Using Default Server: " + PlexServer_SerializeServer(server))
+        Print("Using Default Server: " + PlexServer_SerializeServer(plex_server))
     end if
+    GetGlobalAA().plex_server = plex_server
 
-    home_screen.Populate(server)
+    home_screen.Populate()
     home_screen.Loop()
 end sub

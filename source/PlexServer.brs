@@ -107,11 +107,13 @@ function PlexServer_LoadLibrary_MediaContainer(server, path)
     entry_list = CreateObject("roList")
     for each xml_entry in xml_entries
         item = {
-            "key"    : xml_entry@key,
-            "subtype": xml_entry@type,
-            "title"  : xml_entry@title,
-            "thumb"  : xml_entry@thumb
+            "key"      : xml_entry@key,
+            "subtype"  : xml_entry@type,
+            "title"    : xml_entry@title,
+            "thumb"    : xml_entry@thumb
         }
+
+        if(item["key"].Left(1) <> "/") then item["key"] = path + "/" + item["key"]
 
         if(xml_entry.HasAttribute("parentTitle"     )) then item["title"] = xml_entry@parentTitle      + ": " + item["title"]
         if(xml_entry.HasAttribute("grandparentTitle")) then item["title"] = xml_entry@grandparentTitle + ": " + item["title"]
@@ -122,16 +124,14 @@ function PlexServer_LoadLibrary_MediaContainer(server, path)
         if(xml_entry_type = "Directory") then
             if(xml_entry.HasAttribute("librarySectionID")) then
                 item["type"] = "Directory"
-            elseif((xml_entry@key).Left(1) = "/") then
-                Print("ERROR: PlexServer_LoadLibrary_MediaContainer() -- entry not a section, or in a section")
-                stop
             elseif(xml_entry@uuid = invalid) then
-                item["type"] = "SectionLink"
-                item["key" ] = "/library/" + item["key"]
+                item["type"]      = "SectionLink"
+                item["search"]    = xml_entry@search
+                item["prompt"]    = xml_entry@prompt
+                item["secondary"] = (xml_entry@secondary = "1")
             else
                 item["type"] = "Section"
                 item["uuid"] = xml_entry@uuid
-                item["key" ] = "/library/sections/" + item["key"]
             end if
         elseif(xml_entry_type = "Video") then
             item["type"] = "Video"

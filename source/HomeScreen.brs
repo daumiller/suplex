@@ -17,10 +17,11 @@ function HomeScreen_Create(bg_image="", bg_color="0x1F1F1FFF", queue=invalid)
 
     home_screen.Loop     = HomeScreen_Loop
     home_screen.Populate = HomeScreen_Populate
-    home_screen._Populate_LibraryRow = HomeScreen_Populate_LibraryRow
-    home_screen._Populate_Links      = HomeScreen_Populate_Links
-    home_screen._AddRowContent       = HomeScreen_AddRowContent
-    home_screen._RowList_ItemFocused = HomeScreen_RowList_ItemFocused
+    home_screen._Populate_LibraryRow  = HomeScreen_Populate_LibraryRow
+    home_screen._Populate_Links       = HomeScreen_Populate_Links
+    home_screen._AddRowContent        = HomeScreen_AddRowContent
+    home_screen._RowList_ItemFocused  = HomeScreen_RowList_ItemFocused
+    home_screen._RowList_ItemSelected = HomeScreen_RowList_ItemSelected
 
     return home_screen
 end function
@@ -63,6 +64,20 @@ sub HomeScreen_RowList_ItemFocused()
     m.balloon.visible = true
 end sub
 
+sub HomeScreen_RowList_ItemSelected()
+    selection = m.row_list.rowItemSelected
+    if((selection[0] = -1) or (selection[1] = -1)) then return
+    selected_item = m.row_list.content.GetChild(selection[0]).getChild(selection[1])
+
+    Print("SELECTED: " + selected_item.ShortDescriptionLine1 + ", " + selected_item.ShortDescriptionLine2 + ", " + selected_item.FHDPosterUrl + ", " + selected_item.Title)
+    if(selected_item.ShortDescriptionLine1 = "Section") then
+        if(selected_item.ShortDescriptionLine2 <> "artist") then ' TODO: fix music support
+            section_screen = SectionScreen_Create(selected_item.FHDPosterUrl, selected_item.Title)
+            section_screen.Loop()
+        end if
+    end if
+end sub
+
 sub HomeScreen_Loop()
     while(true)
         msg = Wait(0, m.queue)
@@ -72,6 +87,7 @@ sub HomeScreen_Loop()
         elseif(msg.GetNode() = "rowList") then
             field = msg.GetField()
             if(field = "rowItemFocused" ) then m._RowList_ItemFocused()
+            if(field = "rowItemSelected") then m._RowList_ItemSelected()
             if(field = "scrollingStatus") then
                 if(m.row_list.scrollingStatus) then m.balloon.visible = false
             end if
@@ -79,15 +95,19 @@ sub HomeScreen_Loop()
     end while
 end sub
 
-sub HomeScreen_Populate(server)
-    library_rows = PlexServer_LoadLibrary_MediaContainer(server, "/library")
-    for each item in library_rows
-        m._Populate_LibraryRow(item.title, item.key, server)
-    end for
+sub HomeScreen_Populate()
+    plex_server = GetGlobalAA().plex_server
+    if(plex_server <> invalid) then
+        library_rows = PlexServer_LoadLibrary_MediaContainer(plex_server, "/library")
+        for each item in library_rows
+            m._Populate_LibraryRow(item.title, item.key, plex_server)
+        end for
+    end if
     m._Populate_Links()
 
     m.row_list.SetFocus(true)
     m.row_list.ObserveField("rowItemFocused" , m.queue)
+    m.row_list.ObserveField("rowItemSelected", m.queue)
     m.row_list.ObserveField("scrollingStatus", m.queue)
     m._RowList_ItemFocused()
 end sub
@@ -107,8 +127,8 @@ sub HomeScreen_AddRowContent(content, width=192, height=192, padding_y=64)
     m.row_list.content.AppendChild(content)
 end sub
 
-sub HomeScreen_Populate_LibraryRow(title, key, server)
-    parsed_items = PlexServer_LoadLibrary_MediaContainer(server, key)
+sub HomeScreen_Populate_LibraryRow(title, key, plex_server)
+    parsed_items = PlexServer_LoadLibrary_MediaContainer(plex_server, key)
     if(parsed_items = invalid) then return
 
     if(parsed_items.Count() = 0) then
@@ -152,7 +172,7 @@ sub HomeScreen_Populate_LibraryRow(title, key, server)
             "ShortDescriptionLine2": parsed_item["subtype"],
             "FHDPosterUrl"         : parsed_item["key"],
             "HDPosterUrl"          : parsed_item["thumb"],
-            "SDPosterUrl"          : PlexServer_TranscodeImage(server, parsed_item["thumb"], row_item_size[0], row_item_size[1]),
+            "SDPosterUrl"          : PlexServer_TranscodeImage(plex_server, parsed_item["thumb"], row_item_size[0], row_item_size[1]),
             "Title"                : parsed_item["title"]
             "MinBandwidth"         : row_item_size[0],
             "MaxBandwidth"         : row_item_size[1],

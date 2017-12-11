@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<component name="SectionScreen" extends="Scene">
+    <script type="text/brightscript" uri="pkg:/components/SectionScreen.brs"/>
+
+    <interface>
+        <field id="optionsKey" type="bool" value="true"/>
+    </interface>
+
+    <children>
+        <TitleBar id="titleBar" translation="[0,0]"/>
+
+        <PosterGrid id="posterGrid"
+            translation="[48,72]"
+            basePosterSize="[168,240]"
+            itemSpacing="[32,32]"
+            loadingBitmapUri="pkg:/image/loading-poster.png"
+            numColumns="6" numRows="3"
+            useAtlas="true"
+            caption1NumLines="2"
+        />
+        <!-- useAtlas="false" => better performance, stretches non-conforming-aspect-ratio posters -->
+        <!-- useAtlas="true"  => worse  performance, maintains non-conforming-aspect-ratio posters -->
+    </children>
+</component>
