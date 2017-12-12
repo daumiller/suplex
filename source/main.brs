@@ -86,6 +86,9 @@ sub PlaybackScreen_Create(key, time_start=0)
     ' videoPlayer.content = video_content
     ' videoPlayer.control = "play"
     ' videoPlayer.SetFocus(true)
+    '
+    ' Stream.streamType 1:video, 2:audio, 3:subs
+    ' Multi-Stream Audio Sample: http://192.168.0.2:32400/library/metadata/1146
 
     ' http://192.168.0.2:32400/video/:/transcode/universal/start.m3u8?path=
     '     http%3A%2F%2F127.0.0.1%3A32400%2Flibrary%2Fmetadata%2F23471                -> http://127.0.0.1:32400/library/metadata/23471
