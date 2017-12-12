@@ -14,7 +14,7 @@
             translation="[48,72]"
             basePosterSize="[168,240]"
             itemSpacing="[32,32]"
-            loadingBitmapUri="pkg:/image/loading-poster.png"
+            loadingBitmapUri="pkg:/image/loading-tall.png"
             numColumns="6" numRows="3"
             useAtlas="true"
             caption1NumLines="2"

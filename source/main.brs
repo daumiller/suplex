@@ -1,3 +1,14 @@
+function StringHasContent(str)
+    if(str = invalid) then return false
+    if(str.Len() = 0) then return false
+    return true
+end function
+
+function StringOrBlank(str)
+    if(str = invalid) then return ""
+    return str
+end function
+
 sub Main()
     home_screen = HomeScreen_Create()
     home_screen.scene.SetFocus(true)

@@ -107,25 +107,25 @@ function PlexServer_LoadLibrary_MediaContainer(server, path)
     entry_list = CreateObject("roList")
     for each xml_entry in xml_entries
         item = {
-            "key"      : xml_entry@key,
-            "subtype"  : xml_entry@type,
-            "title"    : xml_entry@title,
-            "thumb"    : xml_entry@thumb
+            "key"             : xml_entry@key,
+            "subtype"         : xml_entry@type,
+            "title"           : xml_entry@title,
+            "thumb"           : xml_entry@thumb,
+            "parentThumb"     : xml_entry@parentThumb,
+            "grandparentThumb": xml_entry@grandparentThumb,
+            "parentTitle"     : xml_entry@parentTitle,
+            "grandparentTitle": xml_entry@grandparentTitle,
+            "parentIndex"     : xml_entry@parentIndex,
+            "parentKey"       : xml_entry@parentKey
         }
 
+        ' relative -> absolute paths
         if(item["key"].Left(1) <> "/") then item["key"] = path + "/" + item["key"]
-
-        if(xml_entry.HasAttribute("parentTitle"     )) then item["title"] = xml_entry@parentTitle      + ": " + item["title"]
-        if(xml_entry.HasAttribute("grandparentTitle")) then item["title"] = xml_entry@grandparentTitle + ": " + item["title"]
-        if(xml_entry.HasAttribute("parentThumb"     )) then item["thumb"] = xml_entry@parentThumb
-        if(xml_entry.HasAttribute("grandparentThumb")) then item["thumb"] = xml_entry@grandparentThumb
 
         xml_entry_type = xml_entry.GetName()
         if(xml_entry_type = "Directory") then
-            if(xml_entry.HasAttribute("librarySectionID")) then
-                item["type"] = "Directory"
-            elseif(xml_entry@uuid = invalid) then
-                item["type"]      = "SectionLink"
+            if(xml_entry@uuid = invalid) then
+                item["type"]      = "Directory"
                 item["search"]    = xml_entry@search
                 item["prompt"]    = xml_entry@prompt
                 item["secondary"] = (xml_entry@secondary = "1")
@@ -146,7 +146,18 @@ function PlexServer_LoadLibrary_MediaContainer(server, path)
     end for
 
     entry_list.Reset()
-    return entry_list
+
+    root_thumb = xml_root@thumb
+    if(StringHasContent(root_thumb) = false) then
+        if(xml_root.HasAttribute("parentThumb"     )) then root_thumb = xml_root@parentThumb
+        if(xml_root.HasAttribute("grandparentThumb")) then root_thumb = xml_root@grandparentThumb
+    end if
+
+    return {
+        view : xml_root@viewGroup,
+        thumb: root_thumb,
+        media: entry_list
+    }
 end function
 
 ' == DISCOVERY =====================================================================================================================

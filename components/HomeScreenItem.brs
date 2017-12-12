@@ -22,7 +22,7 @@ sub ChangedContent()
     if(m.top.itemContent.MaxBandwidth = m.top.itemContent.MinBandwidth) then
         m.poster.loadingBitmapUri = "pkg:/image/loading-square.png"
     else
-        m.poster.loadingBitmapUri = "pkg:/image/loading-poster.png"
+        m.poster.loadingBitmapUri = "pkg:/image/loading-tall.png"
     end if
 
     m.poster.width    = m.top.itemContent.MinBandwidth

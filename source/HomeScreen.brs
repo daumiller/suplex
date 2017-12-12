@@ -70,7 +70,7 @@ sub HomeScreen_RowList_ItemSelected()
     selected_item = m.row_list.content.GetChild(selection[0]).getChild(selection[1])
 
     Print("SELECTED: " + selected_item.ShortDescriptionLine1 + ", " + selected_item.ShortDescriptionLine2 + ", " + selected_item.FHDPosterUrl + ", " + selected_item.Title)
-    if(selected_item.ShortDescriptionLine1 = "Section") then
+    if((selected_item.ShortDescriptionLine1 = "Section") or (selected_item.ShortDescriptionLine1 = "Directory")) then
         if(selected_item.ShortDescriptionLine2 <> "artist") then ' TODO: fix music support
             section_screen = SectionScreen_Create(selected_item.FHDPosterUrl, selected_item.Title)
             section_screen.Loop()
@@ -98,10 +98,15 @@ end sub
 sub HomeScreen_Populate()
     plex_server = GetGlobalAA().plex_server
     if(plex_server <> invalid) then
-        library_rows = PlexServer_LoadLibrary_MediaContainer(plex_server, "/library")
-        for each item in library_rows
-            m._Populate_LibraryRow(item.title, item.key, plex_server)
-        end for
+        library_container = PlexServer_LoadLibrary_MediaContainer(plex_server, "/library")
+        if(library_container <> invalid) then
+            library_rows = library_container.media
+            if(library_rows <> invalid) then
+                for each item in library_rows
+                    m._Populate_LibraryRow(item.title, item.key, plex_server)
+                end for
+            end if
+        end if
     end if
     m._Populate_Links()
 
@@ -128,7 +133,9 @@ sub HomeScreen_AddRowContent(content, width=192, height=192, padding_y=64)
 end sub
 
 sub HomeScreen_Populate_LibraryRow(title, key, plex_server)
-    parsed_items = PlexServer_LoadLibrary_MediaContainer(plex_server, key)
+    parse_container = PlexServer_LoadLibrary_MediaContainer(plex_server, key)
+    if(parse_container = invalid) then return
+    parsed_items = parse_container.media
     if(parsed_items = invalid) then return
 
     if(parsed_items.Count() = 0) then
@@ -167,13 +174,28 @@ sub HomeScreen_Populate_LibraryRow(title, key, plex_server)
 
         row_item = CreateObject("roSGNode", "ContentNode")
 
+        use_thumb = invalid
+        ' For home screen, we prefer parentThumb:Season over grandparentThumb:Series over thumb:Episode
+        if(StringHasContent(parsed_item["thumb"           ])) then use_thumb = parsed_item["thumb"           ]
+        if(StringHasContent(parsed_item["grandparentThumb"])) then use_thumb = parsed_item["grandparentThumb"]
+        if(StringHasContent(parsed_item["parentThumb"     ])) then use_thumb = parsed_item["parentThumb"     ]
+        if(use_thumb = invalid) then
+            use_thumb = "pkg:/image/loading-tall.png" ' TODO: s/loading/missing/
+        else
+            use_thumb = PlexServer_TranscodeImage(plex_server, use_thumb, row_item_size[0], row_item_size[1])
+        end if
+
+        display_title = parsed_item["title"]
+        if(StringHasContent(parsed_item["parentTitle"     ])) then display_title = parsed_item["parentTitle"     ] + ": " + display_title
+        if(StringHasContent(parsed_item["grandparentTitle"])) then display_title = parsed_item["grandparentTitle"] + ": " + display_title
+
         row_item.SetFields({
             "ShortDescriptionLine1": parsed_item["type"],
             "ShortDescriptionLine2": parsed_item["subtype"],
             "FHDPosterUrl"         : parsed_item["key"],
             "HDPosterUrl"          : parsed_item["thumb"],
-            "SDPosterUrl"          : PlexServer_TranscodeImage(plex_server, parsed_item["thumb"], row_item_size[0], row_item_size[1]),
-            "Title"                : parsed_item["title"]
+            "SDPosterUrl"          : use_thumb,
+            "Title"                : display_title,
             "MinBandwidth"         : row_item_size[0],
             "MaxBandwidth"         : row_item_size[1],
             "BookmarkPosition"     : 0,
