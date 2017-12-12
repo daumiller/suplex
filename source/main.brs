@@ -1,14 +1,3 @@
-function StringHasContent(str)
-    if(str = invalid) then return false
-    if(str.Len() = 0) then return false
-    return true
-end function
-
-function StringOrBlank(str)
-    if(str = invalid) then return ""
-    return str
-end function
-
 ' DirectoryOpen / DirectoryPlay
 ' VideoOpen     / VideoPlay
 
@@ -121,13 +110,18 @@ sub Main()
     home_screen = HomeScreen_Create()
     home_screen.scene.SetFocus(true)
 
-    plex_server = PlexServer_Default(home_screen.scene, 5000)
-    if(plex_server = invalid) then
-        Print("No Plex server found...")
-    else
-        Print("Using Default Server: " + PlexServer_SerializeServer(plex_server))
+    server = Plex_Server_Default()
+    if(server = invalid) then
+        discover_servers = Plex_Server_Discover(home_screen.scene, true, 10000)
+        if((discover_servers = invalid) or (discover_servers.Count() = 0)) then
+            Print("ERROR: No Plex servers found...")
+        else
+            server = discover_servers[0]
+        end if
+        Plex_Server_Default(server)
     end if
-    GetGlobalAA().plex_server = plex_server
+    Plex_Server_Current(server)
+    if(server <> invalid) then Print("PLEX Server: " + Plex_Server_Serialize(server))
 
     home_screen.Populate()
     home_screen.Loop()

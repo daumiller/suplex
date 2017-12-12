@@ -1,52 +1,81 @@
-function HomeScreen_Create(bg_image="", bg_color="0x1F1F1FFF", queue=invalid)
-    home_screen = { screen: CreateObject("roSGScreen") }
-    home_screen.scene = home_screen.screen.CreateScene("HomeScreen")
-    home_screen.scene.backgroundURI   = bg_image
-    home_screen.scene.backgroundColor = bg_color
-    home_screen.queue = queue
-    if(queue = invalid) then home_screen.queue = CreateObject("roMessagePort")
+'===================================================================================================================================
+''' section SETUP
+'===================================================================================================================================
+function HomeScreen_Create(bg_image="" as string, bg_color="0x1F1F1FFF" as string) as object
+    this = {
+        "screen"               : CreateObject("roSGScreen"),
+        "queue"                : CreateObject("roMessagePort"),
+        "Populate"             : HomeScreen_Populate,
+        "Loop"                 : HomeScreen_Loop,
+        "_Populate_Library"    : HomeScreen_Populate_Library,
+        "_Populate_Functions"  : HomeScreen_Populate_Functions,
+        "_Populate_AddRow"     : HomeScreen_Populate_AddRow,
+        "_RowList_ItemFocused" : HomeScreen_RowList_ItemFocused,
+        "_RowList_ItemSelected": HomeScreen_RowList_ItemSelected,
+        "_RowList_Translate"   : HomeScreen_RowList_Translate
+    }
 
-    home_screen.screen.SetMessagePort(home_screen.queue)
-    home_screen.screen.Show()
+    this["scene"] = this.screen.CreateScene("HomeScreen")
+    this.scene.backgroundURI   = bg_image
+    this.scene.backgroundColor = bg_color
+    this.screen.SetMessagePort(this.queue)
+    this.screen.Show()
 
-    home_screen.title_bar = home_screen.scene.FindNode("titleBar")
-    home_screen.title_bar.title = "Main Menu"
+    this["row_list"] = this.scene.FindNode("rowList")
+    this["balloon"]  = this.scene.FindNode("balloon")
+    this.scene.FindNode("titleBar").title = "Main Menu"
 
-    home_screen.row_list = home_screen.scene.FindNode("rowList")
-    home_screen.balloon  = home_screen.scene.FindNode("balloon")
-
-    home_screen.Loop     = HomeScreen_Loop
-    home_screen.Populate = HomeScreen_Populate
-    home_screen._Populate_LibraryRow  = HomeScreen_Populate_LibraryRow
-    home_screen._Populate_Links       = HomeScreen_Populate_Links
-    home_screen._AddRowContent        = HomeScreen_AddRowContent
-    home_screen._RowList_ItemFocused  = HomeScreen_RowList_ItemFocused
-    home_screen._RowList_ItemSelected = HomeScreen_RowList_ItemSelected
-
-    return home_screen
+    return this
 end function
 
+'===================================================================================================================================
+''' section LOOP_EVENTS
+'===================================================================================================================================
+sub HomeScreen_Loop()
+    while(true)
+        message = Wait(0, m.queue)
+        message_type = Type(message)
+
+        if(message_type = "roSGScreenEvent") then
+            if(message.IsScreenClosed()) then return
+        elseif(message_type = "roSGNodeEvent") then
+            message_node = message.GetNode()
+            if(message_node = "rowList") then
+                message_field = message.GetField()
+                if(message_field = "rowItemFocused" ) then m._RowList_ItemFocused()
+                if(message_field = "rowItemSelected") then m._RowList_ItemSelected()
+                if(message_field = "scrollingStatus") then
+                    if(m.row_list.scrollingStatus) then m.balloon.visible = false
+                end if
+            end if
+        end if
+    end while
+end sub
+
+'- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 sub HomeScreen_RowList_ItemFocused()
-    focus = m.row_list.rowItemFocused
-    if((focus[0] = -1) or (focus[1] = -1)) then
+    indices = m.row_list.rowItemFocused
+    focus = m._RowList_Translate(indices[0], indices[1])
+    if(focus = invalid) then
         m.balloon.visible = false
         return
     end if
 
     ' TODO: here be magic numbers, some of these translations seem change if the rowList translation changes???
-    if((m.balloon_row = invalid) or (m.balloon_row <> focus[0])) then
-        m.balloon_row = focus[0]
+    if((m.balloon_row = invalid) or (m.balloon_row <> indices[0])) then
+        m.balloon_row = indices[0]
         cell_height = m.row_list.rowHeights[m.balloon_row]
-        cell_width = m.row_list.rowItemSize[m.balloon_row][0] + m.row_list.rowItemSpacing[0][0]
+        cell_width  = m.row_list.rowItemSize[m.balloon_row][0] + m.row_list.rowItemSpacing[0][0]
         m.balloon.translation = [ cell_width+8, cell_height+30 ]
     end if
 
     cell_width = m.row_list.rowItemSize[m.balloon_row][0] + m.row_list.rowItemSpacing[0][0]
-    row_item_count = m.row_list.content.GetChild(focus[0]).GetChildCount()
+    row_item_count = m.row_list.content.GetChild(indices[0]).GetChildCount()
     row_width = row_item_count * cell_width
     if(row_width < 1280) then
         m.balloon.visible = false ' don't update between moving and changing text
-        attach_translation_x = 8 + (cell_width * (focus[1] + 1))
+        attach_translation_x = 8 + (cell_width * (indices[1] + 1))
         if(attach_translation_x > 640) then
             m.balloon.attach = "right"
             attach_translation_x = attach_translation_x - (512 + 8) + 12
@@ -58,61 +87,62 @@ sub HomeScreen_RowList_ItemFocused()
         m.balloon.attach = "left"
     end if
     
-    content = m.row_list.content.GetChild(focus[0]).getChild(focus[1])
-    m.balloon.text = content.title
-
+    m.balloon.text = focus.title
     m.balloon.visible = true
 end sub
 
-sub HomeScreen_RowList_ItemSelected()
-    selection = m.row_list.rowItemSelected
-    if((selection[0] = -1) or (selection[1] = -1)) then return
-    selected_item = m.row_list.content.GetChild(selection[0]).getChild(selection[1])
+'- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    Print("SELECTED: " + selected_item.ShortDescriptionLine1 + ", " + selected_item.ShortDescriptionLine2 + ", " + selected_item.FHDPosterUrl + ", " + selected_item.Title)
-    if((selected_item.ShortDescriptionLine1 = "Section") or (selected_item.ShortDescriptionLine1 = "Directory")) then
-        if(selected_item.ShortDescriptionLine2 <> "artist") then ' TODO: fix music support
-            section_screen = SectionScreen_Create(selected_item.FHDPosterUrl, selected_item.Title)
+sub HomeScreen_RowList_ItemSelected()
+    selection = m._RowList_Translate(m.row_list.rowItemSelected[0], m.row_list.rowItemSelected[1])
+    if(selection = invalid) then return
+
+    Print("SELECTED: " + selection["tagName"] +", "+ selection["type"] +", "+ selection.["key"] +", "+ selection["title"])
+
+    if(selection.tagName = "Directory") then
+        if(selection.type <> "artist") then ' TODO: music support
+            section_screen = SectionSCreen_Create(selection.key, selection.title)
             section_screen.Loop()
         end if
-    elseif(selected_item.ShortDescriptionLine1 = "Video") then
-        resume_position = selected_item.BookmarkPosition
-        if(resume_position = invalid) then resume_position = 0
-        PlaybackScreen_Create(selected_item.FHDPosterUrl, resume_position)
+    elseif(selection.tagName = "Video") then
+        if(selection.viewOffset = invalid) then selection.viewOffset = 0
+        PlaybackScreen_Create(selection.key, selection.viewOffset)
     end if
 end sub
 
-sub HomeScreen_Loop()
-    while(true)
-        msg = Wait(0, m.queue)
-        msg_type = Type(msg)
-        if(msg_type = "roSGScreenEvent") then
-            if(msg.IsScreenClosed()) then return
-        elseif(msg.GetNode() = "rowList") then
-            field = msg.GetField()
-            if(field = "rowItemFocused" ) then m._RowList_ItemFocused()
-            if(field = "rowItemSelected") then m._RowList_ItemSelected()
-            if(field = "scrollingStatus") then
-                if(m.row_list.scrollingStatus) then m.balloon.visible = false
-            end if
-        end if
-    end while
-end sub
+'- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+function HomeScreen_RowList_Translate(x as integer, y as integer) as object
+    if(x = -1) then return invalid
+    if(y = -1) then return invalid
+
+    content_node = m.row_list.content.GetChild(x).GetChild(y)
+    translation = {
+        "tagName"   : content_node.ShortDescriptionLine1,
+        "type"      : content_node.ShortDescriptionLine2,
+        "key"       : content_node.FHDPosterUrl,
+        "title"     : content_node.Title,
+        "viewOffset": content_node.BookmarkPosition
+    }
+
+    return translation
+end function
+
+'===================================================================================================================================
+''' section POPULATION
+'===================================================================================================================================
 sub HomeScreen_Populate()
-    plex_server = GetGlobalAA().plex_server
-    if(plex_server <> invalid) then
-        library_container = PlexServer_LoadLibrary_MediaContainer(plex_server, "/library")
-        if(library_container <> invalid) then
-            library_rows = library_container.media
-            if(library_rows <> invalid) then
-                for each item in library_rows
-                    m._Populate_LibraryRow(item.title, item.key, plex_server)
-                end for
-            end if
+    server = Plex_Server_Current()
+    if(server <> invalid) then
+        library = Plex_MediaContainer("/library", server)
+        if(library <> invalid) then
+            for each item in library.children
+                m._Populate_Library(StringOrBlank(item.title), item.key, server)
+            end for
         end if
     end if
-    m._Populate_Links()
+
+    m._Populate_Functions()
 
     m.row_list.SetFocus(true)
     m.row_list.ObserveField("rowItemFocused" , m.queue)
@@ -121,13 +151,15 @@ sub HomeScreen_Populate()
     m._RowList_ItemFocused()
 end sub
 
-sub HomeScreen_AddRowContent(content, width=192, height=192, padding_y=64)
-    row_heights = CreateObject("roArray", m.row_list.rowHeights.Count() + 1, true)
+'- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+sub HomeScreen_Populate_AddRow(content as object, width=192 as integer, height=192 as integer, padding_y=64 as integer)
+    row_heights = CreateObject("roArray", m.row_list.rowHeights.Count()+1, true)
     row_heights.Append(m.row_list.rowHeights)
     row_heights.Push(height + padding_y)
     m.row_list.rowHeights = row_heights
 
-    row_item_size = CreateObject("roArray", m.row_list.rowItemSize.Count() + 1, true)
+    row_item_size = CreateObject("roArray", m.row_list.rowItemSize.Count()+1, true)
     row_item_size.Append(m.row_list.rowItemSize)
     row_item_size.Push([width,height])
     m.row_list.rowItemSize = row_item_size
@@ -136,69 +168,95 @@ sub HomeScreen_AddRowContent(content, width=192, height=192, padding_y=64)
     m.row_list.content.AppendChild(content)
 end sub
 
-sub HomeScreen_Populate_LibraryRow(title, key, plex_server)
-    parse_container = PlexServer_LoadLibrary_MediaContainer(plex_server, key)
-    if(parse_container = invalid) then return
-    parsed_items = parse_container.media
-    if(parsed_items = invalid) then return
+'- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    if(parsed_items.Count() = 0) then
-        empty_row = CreateObject("roSGNode", "ContentNode")
-        empty_row.SetField("title", title)
-        m._AddRowContent(empty_row)
+sub HomeScreen_Populate_Functions()
+    row_container = CreateObject("roSGNode", "ContentNode")
+    row_container.SetField("title", "Functions")
+    row_item_size = [192, 192]
+
+    func_search = CreateObject("roSGNode", "ContentNode")
+    func_search.SetFields({
+        "ShortDescriptionLine1": "Function",
+        "ShortDescriptionLine2": "search",
+        "HDPosterUrl"          : "pkg:/image/link-search.png",
+        "Title"                : "Search",
+        "MinBandwidth"         : row_item_size[0],
+        "MaxBandwidth"         : row_item_size[1],
+        "BookmarkPosition"     : 0
+    })
+    row_container.AppendChild(func_search)
+
+    func_settings = CreateObject("roSGNode", "ContentNode")
+    func_settings.SetFields({
+        "ShortDescriptionLine1": "Function",
+        "ShortDescriptionLine2": "settings",
+        "HDPosterUrl"          : "pkg:/image/link-settings.png",
+        "Title"                : "Settings",
+        "MinBandwidth"         : row_item_size[0],
+        "MaxBandwidth"         : row_item_size[1],
+        "BookmarkPosition"     : 0
+    })
+    row_container.AppendChild(func_settings)
+
+    m._Populate_AddRow(row_container, row_item_size[0], row_item_size[1])
+end sub
+
+'- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+sub HomeScreen_Populate_Library(title as string, key as string, server as object)
+    media_container = Plex_MediaContainer(key, server)
+    if(media_container = invalid) then return
+
+    row_content = CreateObject("roSGNode", "ContentNode")
+    row_content.SetField("title", title)
+
+    if(media_container.children.Count() = 0) then
+        m._Populate_AddRow(row_content)
         return
     end if
 
-    row_container = CreateObject("roSGNode", "ContentNode")
-    row_container.SetField("title", title)
-
     row_item_size = [192, 274]
-    if(parsed_items[0]["type"] = "Section") then row_item_size = [192, 192]
+    if((key.Len() > 8) and (key.Right(8) = "sections")) then row_item_size = [192, 192]
+    image_transcoder = Plex_Path_Transcode_Image_Init(row_item_size[0], row_item_size[1], server)
 
-    for each parsed_item in parsed_items
-        ' /---------\
-        ' | MAPPING |
-        ' \---------/
-        '
-        ' from PlexServer.brs     -> PlexServer_LoadLibrary_MediaContainer
-        ' to   HomeScreenItem.brs -> ItemContentChanged()
+    for each child in media_container.children
+        ' -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+        ' Mapping to HomeScreenItem.brs -> ItemContentChanged()
         ' fields must map to one of: https://sdkdocs.roku.com/display/sdkdoc/Content+Meta-Data
-        '
-        ' type            -> ShortDescriptionLine1  :  [ "Section", "Directory", "Video", ... ]
-        ' subtype         -> ShortDescriptionLine2  :  [ "movie", "season", "episode", ... ]
-        ' key             -> FHDPosterUrl           :  full, server-relative, path to entry
-        ' thumb           -> HDPosterUrl            :  full-sized thumbnail url
-        ' thumb.sized     -> SDPosterUrl            :  thumbnail resized to row_item_size url
+        ' -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+        ' tagName         -> ShortDescriptionLine1  :  [ "Directory", "Video", ... ]
+        ' type            -> ShortDescriptionLine2  :  [ "movie", "season", "episode", ... ]
+        ' key             -> FHDPosterUrl           :  key
+        ' thumb.sized     -> HDPosterUrl            :  thumbnail resized to row_item_size url
         ' title           -> Title                  :  title
         ' row_item_size.x -> MinBandwidth           :  resized thumbnail width
         ' row_item_size.y -> MaxBandwidth           :  resized thumbnail height
-        ' time_current    -> BookmarkPosition       :  current position (on deck items)
-        ' time_total      -> Length                 :  total length     (on deck items)
-        ' uuid            -> ReleaseDate            :  uuid             (section items)
+        ' viewOffset      -> BookmarkPosition       :  current position (on deck items)
+        ' duration        -> Length                 :  total length     (on deck items)
 
         row_item = CreateObject("roSGNode", "ContentNode")
 
         use_thumb = invalid
-        ' For home screen, we prefer parentThumb:Season over grandparentThumb:Series over thumb:Episode
-        if(StringHasContent(parsed_item["thumb"           ])) then use_thumb = parsed_item["thumb"           ]
-        if(StringHasContent(parsed_item["grandparentThumb"])) then use_thumb = parsed_item["grandparentThumb"]
-        if(StringHasContent(parsed_item["parentThumb"     ])) then use_thumb = parsed_item["parentThumb"     ]
-        if(use_thumb = invalid) then
-            use_thumb = "pkg:/image/loading-tall.png" ' TODO: s/loading/missing/
+        ' For home screen, we prefer parentThumb/Season over grandparentThumb/Series over thumb/Episode (wide)
+        if(StringHasContent(child["thumb"           ])) then use_thumb = child["thumb"           ]
+        if(StringHasContent(child["grandparentThumb"])) then use_thumb = child["grandparentThumb"]
+        if(StringHasContent(child["parentThumb"     ])) then use_thumb = child["parentThumb"     ]
+        if(StringHasContent(use_thumb)) then
+            use_thumb = Plex_Path_Transcode_Image_Next(image_transcoder, use_thumb)
         else
-            use_thumb = PlexServer_TranscodeImage(plex_server, use_thumb, row_item_size[0], row_item_size[1])
+            use_thumb = "pkg:/image/loading-tall.png" ' TODO: s/loading/missing/
         end if
 
-        display_title = parsed_item["title"]
-        if(StringHasContent(parsed_item["parentTitle"     ])) then display_title = parsed_item["parentTitle"     ] + ": " + display_title
-        if(StringHasContent(parsed_item["grandparentTitle"])) then display_title = parsed_item["grandparentTitle"] + ": " + display_title
+        display_title = child["title"]
+        if(StringHasContent(child["parentTitle"     ])) then display_title = child["parentTitle"     ] + ": " + display_title
+        if(StringHasContent(child["grandparentTitle"])) then display_title = child["grandparentTitle"] + ": " + display_title
 
         row_item.SetFields({
-            "ShortDescriptionLine1": parsed_item["type"],
-            "ShortDescriptionLine2": parsed_item["subtype"],
-            "FHDPosterUrl"         : parsed_item["key"],
-            "HDPosterUrl"          : parsed_item["thumb"],
-            "SDPosterUrl"          : use_thumb,
+            "ShortDescriptionLine1": child["tagName"],
+            "ShortDescriptionLine2": child["type"],
+            "FHDPosterUrl"         : child["key"],
+            "HDPosterUrl"          : use_thumb,
             "Title"                : display_title,
             "MinBandwidth"         : row_item_size[0],
             "MaxBandwidth"         : row_item_size[1],
@@ -206,44 +264,11 @@ sub HomeScreen_Populate_LibraryRow(title, key, plex_server)
             "Length"               : 0
         })
 
-        if(parsed_item.DoesExist("time_current")) then row_item.SetField("BookmarkPosition", parsed_item["time_current"])
-        if(parsed_item.DoesExist("time_total"  )) then row_item.SetField("Length"          , parsed_item["time_total"  ])
-        if(parsed_item.DoesExist("uuid"        )) then row_item.SetField("ReleaseDate"     , parsed_item["uuid"        ])
+        if(child.DoesExist("viewOffset")) then row_item.SetField("BookmarkPosition", child["viewOffset"])
+        if(child.DoesExist("duration"  )) then row_item.SetField("Length"          , child["duration"  ])
 
-        row_container.AppendChild(row_item)
+        row_content.AppendChild(row_item)
     end for
 
-    m._AddRowContent(row_container, row_item_size[0], row_item_size[1])
-end sub
-
-sub HomeScreen_Populate_Links()
-    row_container = CreateObject("roSGNode", "ContentNode")
-    row_container.SetField("title", "Functions")
-    row_item_size = [192, 192]
-
-    link_search = CreateObject("roSGNode", "ContentNode")
-    link_search.SetFields({
-        "ShortDescriptionLine1": "Link",
-        "ShortDescriptionLine2": "search",
-        "SDPosterUrl"          : "pkg:/image/link-search.png",
-        "Title"                : "Search",
-        "MinBandwidth"         : row_item_size[0],
-        "MaxBandwidth"         : row_item_size[1],
-        "BookmarkPosition"     : 0
-    })
-    row_container.AppendChild(link_search)
-
-    link_settings = CreateObject("roSGNode", "ContentNode")
-    link_settings.SetFields({
-        "ShortDescriptionLine1": "Link",
-        "ShortDescriptionLine2": "settings",
-        "SDPosterUrl"          : "pkg:/image/link-settings.png",
-        "Title"                : "Settings",
-        "MinBandwidth"         : row_item_size[0],
-        "MaxBandwidth"         : row_item_size[1],
-        "BookmarkPosition"     : 0
-    })
-    row_container.AppendChild(link_settings)
-
-    m._AddRowContent(row_container, row_item_size[0], row_item_size[1])
+    m._Populate_AddRow(row_content, row_item_size[0], row_item_size[1])
 end sub
