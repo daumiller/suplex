@@ -4,7 +4,7 @@
     <script type="text/brightscript" uri="pkg:/components/SectionScreen.brs"/>
 
     <interface>
-        <field id="optionsKey" type="bool" value="true"/>
+        <field id="pressedKey" type="string" value="" alwaysNotify="true"/>
     </interface>
 
     <children>

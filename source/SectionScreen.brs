@@ -28,7 +28,7 @@ function SectionScreen_Create(key, title, bg_image="", bg_color="0x1F1F1FFF", qu
     section_screen.Loop                     = SectionScreen_Loop
     section_screen.Populate                 = SectionScreen_Populate
     section_screen._PosterGrid_ItemSelected = SectionScreen_PosterGrid_ItemSelected
-    section_screen._OptionsKey              = SectionScreen_OptionsKey
+    section_screen._PressedKey              = SectionScreen_PressedKey
 
     section_screen.media_container = PlexServer_LoadLibrary_MediaContainer(plex_server, key)
 
@@ -71,13 +71,13 @@ function SectionScreen_Create(key, title, bg_image="", bg_color="0x1F1F1FFF", qu
     section_screen.Populate()
 
     section_screen.poster_grid.ObserveField("itemSelected", section_screen.queue)
-    section_screen.scene.ObserveField("optionsKey", section_screen.queue)
+    section_screen.scene.ObserveField("pressedKey", section_screen.queue)
     return section_screen
 end function
 
-function SectionScreen_OptionsKey()
-    Print("OPTIONS")
-end function
+sub SectionScreen_PressedKey()
+    Print("Pressed Key: " + m.scene.pressedKey)
+end sub
 
 sub SectionScreen_Populate()
     plex_server = GetGlobalAA().plex_server
@@ -184,7 +184,7 @@ sub SectionScreen_Loop()
             message_node  = message.GetNode()
             message_field = message.GetField()
             if(message_node = "") then
-                if(message_field = "optionsKey") then m._OptionsKey()
+                if(message_field = "pressedKey") then m._PressedKey()
             elseif(message_node = "posterGrid") then
                 if(message_field = "itemSelected") then m._PosterGrid_ItemSelected()
             end if

@@ -9,6 +9,9 @@ function StringOrBlank(str)
     return str
 end function
 
+' DirectoryOpen / DirectoryPlay
+' VideoOpen     / VideoPlay
+
 sub PlaybackScreen_Create(key, time_start=0)
     plex_server = GetGlobalAA().plex_server
     if(StringHasContent(plex_server["Host"]) = false) then return
@@ -89,6 +92,26 @@ sub PlaybackScreen_Create(key, time_start=0)
     '     &protocol=hls&mediaIndex=0&partIndex=0&offset=0&waitForSegments=1
     '     &directPlay=0&directStream=0&videoQuality=100&videoResolution=1280x720
     '     &maxVideoBitrate=4000&subtitleSize=125&audioBoost=100&X-Plex-Platform=Roku
+
+    ' http://192.168.0.2:32400/video/:/transcode/universal/start?
+    '     path=http%3A%2F%2F127.0.0.1%3A32400%2Flibrary%2Fmetadata%2F29127
+    '     &mediaIndex=0&partIndex=0&protocol=http&offset=0&fastSeek=1
+    '     &directPlay=0&directStream=1
+    '     &subtitleSize=100&audioBoost=100
+    '     &session=sygwxs7mdw
+    '     &subtitles=burn&copyts=1
+    '     &Accept-Language=en&X-Plex-Chunked=1&X-Plex-Product=Plex+Web&X-Plex-Version=2.4.18
+    '     &X-Plex-Client-Identifier=d2y4r252nfuuoj5n7kmzbmx6r
+    '     &X-Plex-Platform=Chrome
+    '     &X-Plex-Platform-Version=63.0
+    '     &X-Plex-Device=OSX
+    '     &X-Plex-Device-Name=Plex+Web+(Chrome)
+    '
+    ' http://192.168.0.2:32400/video/:/transcode/universal/stop?session=sygwxs7mdw
+    ' http://192.168.0.2:32400/:/timeline?ratingKey=29127&key=%2Flibrary%2Fmetadata%2F29127&state=paused&playQueueItemID=92502&time=1184&duration=2644895
+    ' http://192.168.0.2:32400/playQueues?type=video&uri=library%3A%2F%2Fb61573c1d5ddc5b62a112e6da6de160b9349cda2%2Fitem%2F%252Flibrary%252Fmetadata%252F29127&shuffle=0&repeat=0
+    ' http://192.168.0.2:32400/status/sessions
+    ' http://192.168.0.2:32400/video/:/transcode/universal/ping?session=bsug6ga2bnu
 end sub
 
 sub Main()
