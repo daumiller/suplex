@@ -93,7 +93,7 @@ sub SectionScreen_Populate()
     section_split = true
     section_parents = {}
     for each media_item in m.media_container.media
-        if((media_item.parentIndex = invalid) or (media_item.parentKey = invalid)) then
+        if(StringHasContent(media_item.parentKey) = false) then
             section_split = false
             exit for
         end if
@@ -169,6 +169,8 @@ sub SectionScreen_PosterGrid_ItemSelected()
     if(media_item["type"] = "Directory") then
         child_screen = SectionScreen_Create(media_item["key"], media_item["title"])
         child_screen.Loop()
+    elseif(media_item["type"] = "Video") then
+        PlaybackScreen_Create(media_item["key"])
     end if
 end sub
 

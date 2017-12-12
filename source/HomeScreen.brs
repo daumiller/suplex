@@ -75,6 +75,10 @@ sub HomeScreen_RowList_ItemSelected()
             section_screen = SectionScreen_Create(selected_item.FHDPosterUrl, selected_item.Title)
             section_screen.Loop()
         end if
+    elseif(selected_item.ShortDescriptionLine1 = "Video") then
+        resume_position = selected_item.BookmarkPosition
+        if(resume_position = invalid) then resume_position = 0
+        PlaybackScreen_Create(selected_item.FHDPosterUrl, resume_position)
     end if
 end sub
 

@@ -115,6 +115,7 @@ function PlexServer_LoadLibrary_MediaContainer(server, path)
             "grandparentThumb": xml_entry@grandparentThumb,
             "parentTitle"     : xml_entry@parentTitle,
             "grandparentTitle": xml_entry@grandparentTitle,
+            "index"           : xml_entry@index,
             "parentIndex"     : xml_entry@parentIndex,
             "parentKey"       : xml_entry@parentKey
         }

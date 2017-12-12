@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component name="PlaybackScreen" extends="Scene">
+    <children>
+        <Video id="video" width="1280" height="720" translation="[0,0]"/>
+    </children>
+</component>
