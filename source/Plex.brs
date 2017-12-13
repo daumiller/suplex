@@ -200,6 +200,20 @@ function Plex_Server_Discover_Parse(message as object, socket as object) as obje
     return server
 end function
 
+'- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+''' function Plex_Server_Test(server=invalid as object) as boolean
+''' return                   whether we can access Plex, and it responds as expected
+''' parameter=server=invalid server assocarray to test, or invalid for Plex_Server_Current
+''' description              test Plex server for connectivity/response
+function Plex_Server_Test(server=invalid as object) as boolean
+    if(server = invalid) then server = Plex_Server_Current()
+    media_container = Plex_MediaContainer("/library", server)
+    if(media_container = invalid) then return false
+    if(not media_container.DoesExist("tagName")) then return false
+    return (media_container.tagName = "MediaContainer")
+end function
+
 
 '===================================================================================================================================
 ''' section URL_COMPOSITION
@@ -327,9 +341,9 @@ function Plex_MediaContainer_ParseItem(parent_key as string, storage_tags as obj
     if(xml_children.Count() = 0) then return node_data
 
     node_children = CreateObject("roArray", xml_children.Count(), true)
-    for index=0 to (xml_children.Count()-1) step 1
-        child = Plex_MediaContainer_ParseItem(parent_key, storage_tags, xml_children[index])
-        if(child <> invalid) then node_children.Push(child)
+    for each xml_child in xml_children
+        child_data = Plex_MediaContainer_ParseItem(parent_key, storage_tags, xml_child)
+        if(child_data <> invalid) then node_children.Push(child_data)
     end for
 
     node_data["children"] = node_children

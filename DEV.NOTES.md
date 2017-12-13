@@ -10,7 +10,7 @@
 * EpisodeScreen
 * music_screen(s) (ArtistScreen/TrackScreen?)
 * SearchScreen
-* SettingsScreen
+* SettingsScreen -> ServerScreen, ...
 
 ## MediaContainer fields ##
 

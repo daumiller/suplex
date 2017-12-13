@@ -106,22 +106,38 @@ sub PlaybackScreen_Create(key, time_start=0)
     ' http://192.168.0.2:32400/video/:/transcode/universal/ping?session=bsug6ga2bnu
 end sub
 
+' helper: guarantee a valid Plex server before proceeding
+sub GetPlex(ui_scene as object)
+    server = Plex_Server_Default()
+    if(server <> invalid) then
+        Plex_Server_Current(server)
+    else
+        ' could just forward to ServerScreen here, but attempt zero-config first.
+        discovery = Plex_Server_Discover(ui_scene, true, 10000)
+        if((discovery = invalid) or (discovery.Count() = 0)) then
+            ' TODO: forward to ServerScreen; only allow exit with a Plex_Server_Current or out of the app
+            Print("ERROR: No Plex servers found...")
+            stop
+        else
+            server = discovery[0]
+            Plex_Server_Default(server)
+            Plex_Server_Current(server)
+        end if
+    end if
+
+    if(not Plex_Server_Test())
+        ' TODO: forward to ServerScreen (it will run Plex_Server_Test before returning)
+        Print("ERROR: No response from Plex server...")
+        stop
+    end if
+end sub
+
 sub Main()
     home_screen = HomeScreen_Create()
     home_screen.scene.SetFocus(true)
 
-    server = Plex_Server_Default()
-    if(server = invalid) then
-        discover_servers = Plex_Server_Discover(home_screen.scene, true, 10000)
-        if((discover_servers = invalid) or (discover_servers.Count() = 0)) then
-            Print("ERROR: No Plex servers found...")
-        else
-            server = discover_servers[0]
-        end if
-        Plex_Server_Default(server)
-    end if
-    Plex_Server_Current(server)
-    if(server <> invalid) then Print("PLEX Server: " + Plex_Server_Serialize(server))
+    GetPlex(home_screen.scene)
+    Print("PLEX Server: " + Plex_Server_Serialize(Plex_Server_Current()))
 
     home_screen.Populate()
     home_screen.Loop()

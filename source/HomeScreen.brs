@@ -2,11 +2,9 @@
 ''' section SETUP
 '===================================================================================================================================
 ''' function HomeScreen_Create(bg_image="" as string, bg_color="0x1F1F1FFF" as string) as object
-''' return                          home_screen assocarray
-''' parameter=bg_image=""           optional background image for home screen
-''' parameter=bg_color="0x1F1F1FFF" optional background color for home screen
-''' description                     create and show home screen
-function HomeScreen_Create(bg_image="" as string, bg_color="0x1F1F1FFF" as string) as object
+''' return      home_screen assocarray
+''' description create and show home screen
+function HomeScreen_Create() as object
     this = {
         "screen"               : CreateObject("roSGScreen"),
         "queue"                : CreateObject("roMessagePort"),
@@ -21,14 +19,14 @@ function HomeScreen_Create(bg_image="" as string, bg_color="0x1F1F1FFF" as strin
     }
 
     this["scene"] = this.screen.CreateScene("HomeScreen")
-    this.scene.backgroundURI   = bg_image
-    this.scene.backgroundColor = bg_color
+    this.scene.backgroundURI   = Registry_Read("preferences", "background-image", "")
+    this.scene.backgroundColor = Registry_Read("preferences", "background-color", "0x1F1F1FFF")
     this.screen.SetMessagePort(this.queue)
     this.screen.Show()
 
+    this.scene.FindNode("titleBar").title = "Main Menu"
     this["row_list"] = this.scene.FindNode("rowList")
     this["balloon"]  = this.scene.FindNode("balloon")
-    this.scene.FindNode("titleBar").title = "Main Menu"
 
     return this
 end function

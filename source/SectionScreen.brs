@@ -1,175 +1,95 @@
-function SectionScreen_Create(key, title, bg_image="", bg_color="0x1F1F1FFF", queue=invalid)
-    plex_server = GetGlobalAA().plex_server
-    if(plex_server = invalid) then return invalid
+'===================================================================================================================================
+''' section SETUP
+'===================================================================================================================================
+''' function SectionScreen_Create(key, title)
+''' return          section_screen assocarray
+''' parameter=key   key of section to load
+''' parameter=title title of section to load, set to title bar
+''' description     create and show section screen
+function SectionScreen_Create(key, title)
+    this = {
+        "screen"                  : CreateObject("roSGScreen"),
+        "queue"                   : CreateObject("roMessagePort"),
+        "title"                   : title,
+        "Loop"                    : SectionScreen_Loop,
+        "_Populate"               : SectionScreen_Populate,
+        "_PressedKey"             : SectionScreen_PressedKey,
+        "_PosterGrid_ItemSelected": SectionScreen_PosterGrid_ItemSelected
+    }
 
-    section_screen = { screen: CreateObject("roSGScreen") }
-    section_screen.scene = section_screen.screen.CreateScene("SectionScreen")
-    section_screen.scene.backgroundURI   = bg_image
-    section_screen.scene.backgroundColor = bg_color
-    section_screen.queue = queue
-    if(queue = invalid) then section_screen.queue = CreateObject("roMessagePort")
+    this["scene"] = this.screen.CreateScene("SectionScreen")
+    this.scene.backgroundURI   = Registry_Read("preferences", "background-image", "")
+    this.scene.backgroundColor = Registry_Read("preferences", "background-color", "0x1F1F1FFF")
+    this.screen.SetMessagePort(this.queue)
+    this.screen.Show()
 
-    section_screen.screen.SetMessagePort(section_screen.queue)
-    section_screen.screen.Show()
-
-    section_screen.title_bar = section_screen.scene.FindNode("titleBar")
-    section_screen.title_bar.title = title
-
-    section_screen.poster_grid = section_screen.scene.FindNode("posterGrid")
-
-    section_screen.Loop                     = SectionScreen_Loop
-    section_screen.Populate                 = SectionScreen_Populate
-    section_screen._PosterGrid_ItemSelected = SectionScreen_PosterGrid_ItemSelected
-    section_screen._PressedKey              = SectionScreen_PressedKey
-
-    section_screen.media_container = PlexServer_LoadLibrary_MediaContainer(plex_server, key)
-
-    if(section_screen.media_container.view = "secondary")
-        ' only MediaContainers.viewGroup="secondary" we should be loading here are root Library Sections
-        section_screen.section_type    = "section"
-        section_screen.view_container  = section_screen.media_container
-        section_screen.view_index      = -1
-        section_screen.media_container = invalid
-
-        all_key_match = key + "/all"
-        view_items = section_screen.view_container.media
-        for index=0 to (view_items.Count() - 1) step 1
-            view_items[index].index = index ' store an 'index' attribute (TODO: where is this used?)
-            if(view_items[index].key = all_key_match) then
-                section_screen.view_index = index
-                section_screen.media_container = PlexServer_LoadLibrary_MediaContainer(plex_server, view_items[index].key)
-            end if
-        end for
-        if(section_screen.view_index = -1) then
-            Print("ERROR: SectionScreen_Create() -- Couldn't find 'all' view for section '" + title + "' (" + key + ")")
-            stop
-        end if
-    elseif(section_screen.media_container.view = "season") then
-        section_screen.section_type = "season"
-    elseif(section_screen.media_container.view = "episode") then
-        ' set special PosterGrid layout for episdodes wide view
-        section_screen.section_type = "episode"
-        section_screen.poster_grid.basePosterSize   = [240, 128]
-        section_screen.poster_grid.loadingBitmapUri = "pkg:/image/loading-wide.png"
-        section_screen.poster_grid.numColumns       = 4
-        section_screen.poster_grid.numRows          = 4
-        section_screen.poster_grid.itemSpacing      = [64,32]
-        section_screen.poster_grid.translation      = [64,72]
-    else
-        Print("ERROR: SectionScreen_Create() -- Unknown view group type '" + section_screen.media_container.view + "' for '" + title + "' (" + key + ")")
-        stop
+    this.scene.FindNode("titleBar").title = title
+    this["poster_grid"]     = this.scene.FindNode("posterGrid")
+    this["media_container"] = Plex_MediaContainer(key)
+    if(this.media_container = invalid) then
+        ' TODO: show some kind of error dialog
+        ' TODO: make sure SectionScreen_Create() callers check for invalid returns
+        Print("ERROR: SectionScreen_Create() -- failed loading MediaContainer")
+        Print("       for '" + title + "', '" + key + "'")
+        this.screen.Close()
+        return invalid
     end if
 
-    section_screen.Populate()
+    if(this.media_container.viewGroup = "secondary") then
+        ' only "secondary" views we should be loading here are root library sections (currently)
+        this["section_type"] = "section"
 
-    section_screen.poster_grid.ObserveField("itemSelected", section_screen.queue)
-    section_screen.scene.ObserveField("pressedKey", section_screen.queue)
-    return section_screen
-end function
-
-sub SectionScreen_PressedKey()
-    Print("Pressed Key: " + m.scene.pressedKey)
-end sub
-
-sub SectionScreen_Populate()
-    plex_server = GetGlobalAA().plex_server
-    
-    content_container = CreateObject("roSGNode", "ContentNode")
-    poster_dimensions = m.poster_grid.basePosterSize
-
-    ' TODO: s/loading/missing/
-    missing_poster = "pkg:/image/loading-tall.png"
-    if(m.section_type = "episode") then missing_poster = "pkg:/image/loading-wide.png"
-
-    ' Section split (ex: viewing all episodes of a series split into season sections)
-    section_split = true
-    section_parents = {}
-    for each media_item in m.media_container.media
-        if(StringHasContent(media_item.parentKey) = false) then
-            section_split = false
-            exit for
-        end if
-        if(section_parents.DoesExist(media_item.parentKey) = false) then
-            parent_data = PlexServer_LoadLibrary_MediaContainer(plex_server, media_item.parentKey)
-            if((parent_data = invalid) or (parent_data.media = invalid) or (parent_data.media.Count() < 1)) then
-                Print("ERROR: SectionScreen_Populate - Couldn't find parentKey '" + media_item.parentKey + "'")
-                section_split = false
+        all_found = false
+        all_match = key + "/all"
+        for each child in this.media_container.children
+            if(child.key = all_match) then
+                all_found = true
+                this.media_container = Plex_MediaContainer(child.key)
                 exit for
             end if
-            section_parents[media_item.parentKey] = parent_data.media[0].title
+        end for
+        if(not all_found) then
+            ' TODO: show some kind of error dialog
+            Print("ERROR: SectionScreen_Create() -- failed finding all key for root library section")
+            Print("       for '" + title + "', '" + key + "'")
+            this.screen.Close()
+            return invalid
         end if
-    end for
-    if(section_split = false) then section_parents = {} ' free AA
-    section_key  = invalid
-    section_node = invalid
-
-    for each media_item in m.media_container.media
-        content_item = CreateObject("roSGNode", "ContentNode")
-
-        use_thumb = invalid
-        ' For section screen, we prefer episode thumb, but will pull a season or series if needed
-
-        if(StringHasContent(media_item["grandparentThumb"])) then use_thumb = media_item["grandparentThumb"]
-        if(StringHasContent(media_item["parentThumb"     ])) then use_thumb = media_item["parentThumb"     ]
-        if(StringHasContent(media_item["thumb"           ])) then use_thumb = media_item["thumb"           ]
-        if(StringHasContent(use_thumb) = false) then use_thumb = m.media_container.thumb
-        if(StringHasContent(use_thumb) = false) then
-            use_thumb = missing_poster
-        else
-            use_thumb = PlexServer_TranscodeImage(plex_server, use_thumb, poster_dimensions[0], poster_dimensions[1])
-        end if
-
-        content_item.SetFields({
-            ' https://sdkdocs.roku.com/display/sdkdoc/PosterGrid#PosterGrid-DataBindings
-            "HDGridPosterUrl"      : use_thumb,
-            "ShortDescriptionLine1": media_item["title"],
-            "Description"          : media_item["key"],
-        })
-
-        if(section_split = false) then
-            content_container.AppendChild(content_item)
-        else
-            if(section_key = media_item["parentKey"]) then
-                section_node.AppendChild(content_item)
-            else
-                section_key = media_item["parentKey"]
-                if(section_node <> invalid) then content_container.AppendChild(section_node)
-                section_node = CreateObject("roSGNode", "ContentNode")
-                section_node.SetFields({
-                    "ContentType": "SECTION",
-                    "Title"      : section_parents[section_key]
-                })
-                section_node.AppendChild(content_item)
-            end if
-        end if
-    end for
-
-    if((section_split = true) and (section_node <> invalid)) then
-        content_container.AppendChild(section_node)
+    elseif(this.media_container.viewGroup = "season") then
+        this["section_type"] = "season"
+    elseif(this.media_container.viewGroup = "episode") then
+        ' set special poster grid layout for episode wide thumbnails
+        this["section_type"] = "episode"
+        this.poster_grid.basePosterSize   = [240, 128]
+        this.poster_grid.loadingBitmapUri = "pkg:/image/loading-wide.png"
+        this.poster_grid.numColumns       = 4
+        this.poster_grid.numRows          = 4
+        this.poster_grid.itemSpacing      = [64,32]
+        this.poster_grid.translation      = [64,72]
+    else
+        ' TODO: show some kind of error dialog
+        Print("ERROR: SectionScreen_Create() -- Unknown viewGroup type '" + this.media_container.viewGroup + "'")
+        Print("       for '" + title + "', '" + key + "'")
+        this.screen.Close()
+        return invalid
     end if
 
-    m.poster_grid.content = content_container
-    m.poster_grid.SetFocus(true)
-end sub
+    this._Populate()
+    this.poster_grid.ObserveField("itemSelected", this.queue)
+    this.scene.ObserveField("pressedKey", this.queue)
+    return this
+end function
 
-sub SectionScreen_PosterGrid_ItemSelected()
-    index = m.poster_grid.itemSelected
-    if(index < 0) then return
-
-    media_item = m.media_container.media[index]
-    Print("SELECTED: " + StringOrBlank(media_item["type"]) +","+ StringOrBlank(media_item["subtype"]) +","+ StringOrBlank(media_item["key"]) +","+ StringOrBlank(media_item["title"]) )
-    if(media_item["type"] = "Directory") then
-        child_screen = SectionScreen_Create(media_item["key"], media_item["title"])
-        child_screen.Loop()
-    elseif(media_item["type"] = "Video") then
-        PlaybackScreen_Create(media_item["key"])
-    end if
-end sub
-
+'===================================================================================================================================
+''' section LOOP_EVENTS
+'===================================================================================================================================
+''' sub SectionScreen_Loop()
+''' description run section screen event loop
 sub SectionScreen_Loop()
     while(true)
         message = Wait(0, m.queue)
         message_type = Type(message)
+
         if(message_type = "roSGScreenEvent") then
             if(message.IsScreenClosed()) then return
         elseif(message_type = "roSGNodeEvent") then
@@ -182,4 +102,115 @@ sub SectionScreen_Loop()
             end if
         end if
     end while
+end sub
+
+'- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+' event: poster grid item selected
+sub SectionScreen_PosterGrid_ItemSelected()
+    index = m.poster_grid.itemSelected
+    if(index < 0) then return
+
+    child = m.media_container.children[index]
+    Print("SELECTED: " + StringOrBlank(child.tagName) +", "+ StringOrBlank(child["type"]) +", "+ StringOrBlank(child.key) +", "+ StringOrBlank(child.title))
+    if(child.tagName = "Directory") then
+        child_title = child.title
+        if(m.media_container.viewGroup = "season") then child_title = m.title + ": " + child.title
+        child_screen = SectionScreen_Create(child.key, child_title)
+        if(child_screen <> invalid) then child_screen.Loop()
+    elseif(child.tagName = "Video") then
+        ' PlaybackScreen_Create(child["key"])
+        Print("PlaybackScreen_Create(" + child.key + ")")
+    end if
+end sub
+
+'- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+' event: unhandled key pressed
+sub SectionScreen_PressedKey()
+    Print("Pressed Key: " + m.scene.pressedKey)
+end sub
+
+'===================================================================================================================================
+''' section POPULATION
+'===================================================================================================================================
+' helper: populate section
+sub SectionScreen_Populate()
+    content_node = CreateObject("roSGNode", "ContentNode")
+    poster_dimensions = m.poster_grid.basePosterSize
+
+    ' TODO: s/loading/missing/
+    missing_poster = "pkg:/image/loading-tall.png"
+    if(m.section_type = "episode") then missing_poster = "pkg:/image/loading-wide.png"
+
+    ' section split (ex: viewing all episodes of a series split into season sections)
+    section_split = true
+    section_parents = {}
+    for each child in m.media_container.children
+        if(not StringHasContent(child.parentKey)) then
+            section_split = false
+            exit for
+        end if
+        if(section_parents.DoesExist(child.parentKey) = false) then
+            parent_data = Plex_MediaContainer(child.parentKey)
+            if((parent_data = invalid) or (parent_data.children.Count() < 1)) then
+                Print("ERROR: SectionScreen_Populate() -- Couldn't parse parentKey '" + child.parentKey + "'")
+                section_split = false
+                exit for
+            end if
+            section_parents[child.parentKey] = parent_data.children[0].title
+        end if
+    end for
+
+    if(section_split = false) then section_parents = {} ' free AA
+    section_key  = invalid
+    section_node = invalid
+    image_transcoder = Plex_Path_Transcode_Image_Init(poster_dimensions[0], poster_dimensions[1])
+
+    for each child in m.media_container.children
+        child_content = CreateObject("roSGNode", "ContentNode")
+
+        poster_thumb = invalid
+        ' for section screen, prefer episode thumb, but pull season or series if needed
+        if(StringHasContent(child.grandparentThumb)) then poster_thumb = child.grandparentThumb
+        if(StringHasContent(child.parentThumb     )) then poster_thumb = child.parentThumb
+        if(StringHasContent(child.thumb           )) then poster_thumb = child.thumb
+        if(not StringHasContent(poster_thumb      )) then poster_thumb = m.media_container.thumb
+        if(not StringHasContent(poster_thumb)) then
+            poster_thumb = missing_poster
+        else
+            poster_thumb = Plex_Path_Transcode_Image_Next(image_transcoder, poster_thumb)
+        end if
+
+        child_content.SetFields({
+            ' https://sdkdocs.roku.com/display/sdkdoc/PosterGrid#PosterGrid-DataBindings
+            "HDGridPosterUrl"      : poster_thumb,
+            "ShortDescriptionLine1": child.title,
+            "Description"          : child.key
+        })
+
+        if(not section_split) then
+            content_node.AppendChild(child_content)
+        else
+            if(section_key = child.parentKey) then
+                section_node.AppendChild(child_content)
+            else
+                section_key = child.parentKey
+                if(section_node <> invalid) then content_node.AppendChild(section_node)
+                section_node = CreateObject("roSGNode", "ContentNode")
+                section_node.SetFields({
+                    "ContentType": "SECTION",
+                    "Title"      : section_parents[section_key]
+                })
+                section_node.AppendChild(child_content)
+            end if
+        end if
+    end for
+
+    if(section_split and (section_node <> invalid)) then
+        content_node.AppendChild(section_node)
+    end if
+
+    m.poster_grid.content = content_node
+    m.poster_grid.SetFocus(true)
 end sub
