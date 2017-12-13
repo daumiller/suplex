@@ -1,6 +1,11 @@
 '===================================================================================================================================
 ''' section SETUP
 '===================================================================================================================================
+''' function HomeScreen_Create(bg_image="" as string, bg_color="0x1F1F1FFF" as string) as object
+''' return                          home_screen assocarray
+''' parameter=bg_image=""           optional background image for home screen
+''' parameter=bg_color="0x1F1F1FFF" optional background color for home screen
+''' description                     create and show home screen
 function HomeScreen_Create(bg_image="" as string, bg_color="0x1F1F1FFF" as string) as object
     this = {
         "screen"               : CreateObject("roSGScreen"),
@@ -31,6 +36,8 @@ end function
 '===================================================================================================================================
 ''' section LOOP_EVENTS
 '===================================================================================================================================
+''' sub HomeScreen_Loop()
+''' description run home screen event loop; control will not return from this procedure
 sub HomeScreen_Loop()
     while(true)
         message = Wait(0, m.queue)
@@ -54,6 +61,7 @@ end sub
 
 '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+' event: RowList focused item changes
 sub HomeScreen_RowList_ItemFocused()
     indices = m.row_list.rowItemFocused
     focus = m._RowList_Translate(indices[0], indices[1])
@@ -62,7 +70,7 @@ sub HomeScreen_RowList_ItemFocused()
         return
     end if
 
-    ' TODO: here be magic numbers, some of these translations seem change if the rowList translation changes???
+    ' TODO: here be magic numbers, some of these translations seem to change if the rowList translation changes???
     if((m.balloon_row = invalid) or (m.balloon_row <> indices[0])) then
         m.balloon_row = indices[0]
         cell_height = m.row_list.rowHeights[m.balloon_row]
@@ -93,6 +101,7 @@ end sub
 
 '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+' event: RowList handled an OK button press while item focused
 sub HomeScreen_RowList_ItemSelected()
     selection = m._RowList_Translate(m.row_list.rowItemSelected[0], m.row_list.rowItemSelected[1])
     if(selection = invalid) then return
@@ -112,6 +121,7 @@ end sub
 
 '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+' helper: translate ContentNode fields to Plex fields (full mapping in HomeScreen_Populate_Library())
 function HomeScreen_RowList_Translate(x as integer, y as integer) as object
     if(x = -1) then return invalid
     if(y = -1) then return invalid
@@ -131,6 +141,8 @@ end function
 '===================================================================================================================================
 ''' section POPULATION
 '===================================================================================================================================
+''' sub HomeScreen_Populate()
+''' description populate home screen items; this is a separate call to allow for the sequence [ HomeScreen.Create, PlexServer.Find, HomeScreen.Populate ]
 sub HomeScreen_Populate()
     server = Plex_Server_Current()
     if(server <> invalid) then
@@ -144,15 +156,17 @@ sub HomeScreen_Populate()
 
     m._Populate_Functions()
 
+    ' wait to focus and observe until fully populated
     m.row_list.SetFocus(true)
     m.row_list.ObserveField("rowItemFocused" , m.queue)
     m.row_list.ObserveField("rowItemSelected", m.queue)
     m.row_list.ObserveField("scrollingStatus", m.queue)
-    m._RowList_ItemFocused()
+    m._RowList_ItemFocused() ' initial focus item ([0][0])
 end sub
 
 '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+' helper: add a ContentRow node to RowList, also adjusting RowList fields [ rowHeight, rowItemSize ]
 sub HomeScreen_Populate_AddRow(content as object, width=192 as integer, height=192 as integer, padding_y=64 as integer)
     row_heights = CreateObject("roArray", m.row_list.rowHeights.Count()+1, true)
     row_heights.Append(m.row_list.rowHeights)
@@ -170,6 +184,7 @@ end sub
 
 '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+' helper: populate non-library special functions [ Search, Settings ]
 sub HomeScreen_Populate_Functions()
     row_container = CreateObject("roSGNode", "ContentNode")
     row_container.SetField("title", "Functions")
@@ -204,6 +219,7 @@ end sub
 
 '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+' helper: add row for a root /library item ([sections, onDeck, recentlyAdded, ...])
 sub HomeScreen_Populate_Library(title as string, key as string, server as object)
     media_container = Plex_MediaContainer(key, server)
     if(media_container = invalid) then return

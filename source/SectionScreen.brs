@@ -1,11 +1,3 @@
-' Section: http://192.168.0.2:32400/library/sections/6
-' Series:  http://192.168.0.2:32400/library/metadata/26640/children
-' Season:  http://192.168.0.2:32400/library/metadata/26655/children
-' SectionScreen_Create will handle Sections/Series/Seasons
-' set basePosterSize/Rows/Columns based on type (Sections-Tall, Series-Tall, Seasons-Wide)
-' MediaContainer.viewGroup = "secondary", -> all -> MediaContainer.viewGroup = "show/movie/..."
-' MediaContainer.viewGroup = "season", MediaContainer.viewGroup = "episode"
-
 function SectionScreen_Create(key, title, bg_image="", bg_color="0x1F1F1FFF", queue=invalid)
     plex_server = GetGlobalAA().plex_server
     if(plex_server = invalid) then return invalid
