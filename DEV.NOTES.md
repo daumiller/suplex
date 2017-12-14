@@ -1,7 +1,16 @@
 # suplex notes #
 
-## Screens ##
+## top ##
+* GDM: https://github.com/NineWorlds/serenity-android/wiki/Good-Day-Mate
 
+## Not Supported ##
+* myPlex
+* Plex Pass
+
+## May Support Later in Development ##
+* Channels
+
+## Screens ##
 * HomeScreen
 * DirectoryScreen
 * MovieScreen
@@ -13,7 +22,6 @@
 * SettingsScreen -> ServerScreen, ...
 
 ## MediaContainer fields ##
-
 * MediaContainer
     * allowSync
     * art

@@ -132,6 +132,8 @@ sub GetPlex(ui_scene as object)
     end if
 end sub
 
+' TODO: media viewOffset and Duration, specified in milliseconds, are overflowing integers...
+
 sub Main()
     home_screen = HomeScreen_Create()
     home_screen.scene.SetFocus(true)
@@ -140,5 +142,5 @@ sub Main()
     Print("PLEX Server: " + Plex_Server_Serialize(Plex_Server_Current()))
 
     home_screen.Populate()
-    home_screen.Loop()
+    GlobalLoop().Run()
 end sub

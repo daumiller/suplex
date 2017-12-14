@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <component name="HomeScreen" extends="Scene">
+    <script type="text/brightscript" uri="pkg:/components/HomeScreen.brs"/>
+
+    <interface>
+        <field id="pressedKey" type="string" value="" alwaysNotify="true"/>
+    </interface>
+
     <children>
         <TitleBar id="titleBar" translation="[0,0]"/>
 

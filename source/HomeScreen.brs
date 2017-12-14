@@ -7,20 +7,23 @@
 function HomeScreen_Create() as object
     this = {
         "screen"               : CreateObject("roSGScreen"),
-        "queue"                : CreateObject("roMessagePort"),
+        "queue"                : GlobalLoop().queue,
         "Populate"             : HomeScreen_Populate,
-        "Loop"                 : HomeScreen_Loop,
+        "Handle_Message"       : HomeScreen_Handle_Message,
+        "Reactivated"          : HomeScreen_Reactivated,
         "_Populate_Library"    : HomeScreen_Populate_Library,
         "_Populate_Functions"  : HomeScreen_Populate_Functions,
         "_Populate_AddRow"     : HomeScreen_Populate_AddRow,
         "_RowList_ItemFocused" : HomeScreen_RowList_ItemFocused,
         "_RowList_ItemSelected": HomeScreen_RowList_ItemSelected,
-        "_RowList_Translate"   : HomeScreen_RowList_Translate
+        "_RowList_Translate"   : HomeScreen_RowList_Translate,
+        "_PressedKey"          : HomeScreen_PressedKey,
     }
 
     this["scene"] = this.screen.CreateScene("HomeScreen")
     this.scene.backgroundURI   = Registry_Read("preferences", "background-image", "")
     this.scene.backgroundColor = Registry_Read("preferences", "background-color", "0x1F1F1FFF")
+    GlobalLoop().Screen_Push(this)
     this.screen.SetMessagePort(this.queue)
     this.screen.Show()
 
@@ -34,27 +37,43 @@ end function
 '===================================================================================================================================
 ''' section LOOP_EVENTS
 '===================================================================================================================================
-''' sub HomeScreen_Loop()
-''' description run home screen event loop; control will not return from this procedure
-sub HomeScreen_Loop()
-    while(true)
-        message = Wait(0, m.queue)
-        message_type = Type(message)
+' event: message
+function HomeScreen_Handle_Message(message as object) as boolean
+    message_type = Type(message)
 
-        if(message_type = "roSGScreenEvent") then
-            if(message.IsScreenClosed()) then return
-        elseif(message_type = "roSGNodeEvent") then
-            message_node = message.GetNode()
-            if(message_node = "rowList") then
-                message_field = message.GetField()
-                if(message_field = "rowItemFocused" ) then m._RowList_ItemFocused()
-                if(message_field = "rowItemSelected") then m._RowList_ItemSelected()
-                if(message_field = "scrollingStatus") then
-                    if(m.row_list.scrollingStatus) then m.balloon.visible = false
-                end if
+    if(message_type = "roSGScreenEvent") then
+        if(message.IsScreenClosed()) then GlobalLoop().Screen_Pop()
+        return true
+    elseif(message_type = "roSGNodeEvent") then
+        message_node  = message.GetNode()
+        message_field = message.GetField()
+        if(message_node = "") then
+            if(message_field = "pressedKey") then m._PressedKey()
+        elseif(message_node = "rowList") then
+            if(message_field = "rowItemFocused" ) then m._RowList_ItemFocused()
+            if(message_field = "rowItemSelected") then m._RowList_ItemSelected()
+            if(message_field = "scrollingStatus") then
+                if(m.row_list.scrollingStatus) then m.balloon.visible = false
             end if
         end if
-    end while
+        return true
+    end if
+
+    return false
+end function
+
+'event: reactivation / back on top of screen stack
+sub HomeScreen_Reactivated()
+    ' TODO: maybe refresh? if X time?
+    '       maybe also Deactivated event?
+    Print("Returned to Home Screen")
+end sub
+
+'- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+' event: unhandled key pressed
+sub HomeScreen_PressedKey()
+    Print("Pressed Key: " + m.scene.pressedKey)
 end sub
 
 '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -107,13 +126,11 @@ sub HomeScreen_RowList_ItemSelected()
     Print("SELECTED: " + selection["tagName"] +", "+ selection["type"] +", "+ selection.["key"] +", "+ selection["title"])
 
     if(selection.tagName = "Directory") then
-        if(selection.type <> "artist") then ' TODO: music support
-            section_screen = SectionSCreen_Create(selection.key, selection.title)
-            section_screen.Loop()
-        end if
+        if(selection.type = "artist") then return ' TODO: music support
+        SectionScreen_Create(selection.key, selection.title)
     elseif(selection.tagName = "Video") then
         if(selection.viewOffset = invalid) then selection.viewOffset = 0
-        PlaybackScreen_Create(selection.key, selection.viewOffset)
+        Print("PlaybackScreen_Create(" + selection.key + ", " + selection.viewOffset.ToStr() + ")")
     end if
 end sub
 
@@ -156,6 +173,7 @@ sub HomeScreen_Populate()
 
     ' wait to focus and observe until fully populated
     m.row_list.SetFocus(true)
+    m.scene.ObserveField("pressedKey", m.queue)
     m.row_list.ObserveField("rowItemFocused" , m.queue)
     m.row_list.ObserveField("rowItemSelected", m.queue)
     m.row_list.ObserveField("scrollingStatus", m.queue)

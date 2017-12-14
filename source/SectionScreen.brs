@@ -2,16 +2,16 @@
 ''' section SETUP
 '===================================================================================================================================
 ''' function SectionScreen_Create(key, title)
-''' return          section_screen assocarray
+''' return          section_screen assocarray, or invalid on error (check return value)
 ''' parameter=key   key of section to load
 ''' parameter=title title of section to load, set to title bar
 ''' description     create and show section screen
 function SectionScreen_Create(key, title)
     this = {
         "screen"                  : CreateObject("roSGScreen"),
-        "queue"                   : CreateObject("roMessagePort"),
+        "queue"                   : GlobalLoop().queue,
         "title"                   : title,
-        "Loop"                    : SectionScreen_Loop,
+        "Handle_Message"          : SectionScreen_Handle_Message,
         "_Populate"               : SectionScreen_Populate,
         "_PressedKey"             : SectionScreen_PressedKey,
         "_PosterGrid_ItemSelected": SectionScreen_PosterGrid_ItemSelected
@@ -20,6 +20,7 @@ function SectionScreen_Create(key, title)
     this["scene"] = this.screen.CreateScene("SectionScreen")
     this.scene.backgroundURI   = Registry_Read("preferences", "background-image", "")
     this.scene.backgroundColor = Registry_Read("preferences", "background-color", "0x1F1F1FFF")
+    GlobalLoop().Screen_Push(this)
     this.screen.SetMessagePort(this.queue)
     this.screen.Show()
 
@@ -28,7 +29,6 @@ function SectionScreen_Create(key, title)
     this["media_container"] = Plex_MediaContainer(key)
     if(this.media_container = invalid) then
         ' TODO: show some kind of error dialog
-        ' TODO: make sure SectionScreen_Create() callers check for invalid returns
         Print("ERROR: SectionScreen_Create() -- failed loading MediaContainer")
         Print("       for '" + title + "', '" + key + "'")
         this.screen.Close()
@@ -83,26 +83,26 @@ end function
 '===================================================================================================================================
 ''' section LOOP_EVENTS
 '===================================================================================================================================
-''' sub SectionScreen_Loop()
-''' description run section screen event loop
-sub SectionScreen_Loop()
-    while(true)
-        message = Wait(0, m.queue)
-        message_type = Type(message)
+' event: message
+function SectionScreen_Handle_Message(message as object) as boolean
+    message_type = Type(message)
 
-        if(message_type = "roSGScreenEvent") then
-            if(message.IsScreenClosed()) then return
-        elseif(message_type = "roSGNodeEvent") then
-            message_node  = message.GetNode()
-            message_field = message.GetField()
-            if(message_node = "") then
-                if(message_field = "pressedKey") then m._PressedKey()
-            elseif(message_node = "posterGrid") then
-                if(message_field = "itemSelected") then m._PosterGrid_ItemSelected()
-            end if
+    if(message_type = "roSGScreenEvent") then
+        if(message.IsScreenClosed()) then GlobalLoop().Screen_Pop()
+        return true
+    elseif(message_type = "roSGNodeEvent") then
+        message_node  = message.GetNode()
+        message_field = message.GetField()
+        if(message_node = "") then
+            if(message_field = "pressedKey") then m._PressedKey()
+        elseif(message_node = "posterGrid") then
+            if(message_field = "itemSelected") then m._PosterGrid_ItemSelected()
         end if
-    end while
-end sub
+        return true
+    end if
+
+    return false
+end function
 
 '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -116,10 +116,8 @@ sub SectionScreen_PosterGrid_ItemSelected()
     if(child.tagName = "Directory") then
         child_title = child.title
         if(m.media_container.viewGroup = "season") then child_title = m.title + ": " + child.title
-        child_screen = SectionScreen_Create(child.key, child_title)
-        if(child_screen <> invalid) then child_screen.Loop()
+        SectionScreen_Create(child.key, child_title)
     elseif(child.tagName = "Video") then
-        ' PlaybackScreen_Create(child["key"])
         Print("PlaybackScreen_Create(" + child.key + ")")
     end if
 end sub

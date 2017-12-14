@@ -214,6 +214,12 @@ function Plex_Server_Test(server=invalid as object) as boolean
     return (media_container.tagName = "MediaContainer")
 end function
 
+'===================================================================================================================================
+''' section REMOTE_CONTROL
+'===================================================================================================================================
+' TODO: remote control requires us to
+'       - run a GDM listener responding to requests
+'       - run a webserver responding for specific endpoints ("/player/playback/playMedia", ...)
 
 '===================================================================================================================================
 ''' section URL_COMPOSITION
