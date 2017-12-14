@@ -270,10 +270,9 @@ sub HomeScreen_Populate_Library(title as string, key as string, server as object
         row_item = CreateObject("roSGNode", "ContentNode")
 
         use_thumb = invalid
-        ' For home screen, we prefer parentThumb/Season over grandparentThumb/Series over thumb/Episode (wide)
-        if(StringHasContent(child["thumb"           ])) then use_thumb = child["thumb"           ]
         if(StringHasContent(child["grandparentThumb"])) then use_thumb = child["grandparentThumb"]
         if(StringHasContent(child["parentThumb"     ])) then use_thumb = child["parentThumb"     ]
+        if(StringHasContent(child["thumb"]) and (child["type"] <> "episode")) then use_thumb = child["thumb"] ' skip self-thumbs for episodes on home screen
         if(StringHasContent(use_thumb)) then
             use_thumb = Plex_Path_Transcode_Image_Next(image_transcoder, use_thumb)
         else
