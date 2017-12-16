@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<component name="VideoScreen" extends="Scene">
+    <script type="text/brightscript" uri="pkg:/components/VideoScreen.brs"/>
+
+    <interface>
+        <field id="pressedKey" type="string" value="" alwaysNotify="true"/>
+    </interface>
+
+    <children>
+        <TitleBar id="titleBar"/>
+        <Group translation="[0,56]">
+            <!--
+            <Rectangle width="214" height="664" color="0x440000FF" translation="[   0,  0]"/>
+            <Rectangle width="374" height="320" color="0x000044FF" translation="[ 214, 56]"/>
+            <Rectangle width="478" height="320" color="0x444400FF" translation="[ 588, 56]"/>
+            <Rectangle width="852" height="176" color="0x004400FF" translation="[ 214,432]"/>
+            <Rectangle width="214" height="664" color="0x440000FF" translation="[1066,  0]"/>
+            -->
+
+            <Group translation="[214,56]">
+                <!-- <Rectangle width="320" height="320" color="0x440044FF" translation="[0,0]"/> -->
+                <Poster id="imgThumb" loadingBitmapUri="pkg:/image/loading-square-320.png"/>
+            </Group>
+            <Group translation="[588,56]">
+                <Label id="lblTitle"   translation="[0, 0]" width="478" font="font:LargeBoldSystemFont"/> <!-- video.title -->
+                <Label id="lblTagline" translation="[0,32]" width="446" font="font:SmallSystemFont"/>     <!-- video.tagline || video.index -->
+                <Group translation="[32,84]">
+                    <Label translation="[0, 0]" width="72" height="36" vertAlign="center" horizAlign="right" font="font:SmallestSystemFont" text="length"/>
+                    <Label translation="[0,36]" width="72" height="36" vertAlign="center" horizAlign="right" font="font:SmallestSystemFont" text="date"  />
+                    <Label translation="[0,72]" width="72" height="36" vertAlign="center" horizAlign="right" font="font:SmallestSystemFont" text="video" />
+                </Group>
+                <Group translation="[116,84]">
+                    <Label id="lblLength" translation="[0, 0]" width="362" height="36" vertAlign="center" font="font:MediumSystemFont"/> <!-- video.duration -->
+                    <Label id="lblDate"   translation="[0,36]" width="362" height="36" vertAlign="center" font="font:MediumSystemFont"/> <!-- video.originallyAvailableAt -->
+                    <Label id="lblVideo"  translation="[0,72]" width="362" height="36" vertAlign="center" font="font:MediumSystemFont"/> <!-- video.resolution -->
+                </Group>
+                <LabelList id="controls" translation="[64,220]" itemSize="[256,48]" numRows="2" vertFocusAnimationStyle="floatingFocus">
+                    <ContentNode role="content">
+                        <ContentNode title="• Play"/>
+                        <ContentNode title="• Options"/>
+                    </ContentNode>
+                </LabelList>
+            </Group>
+            <Group translation="[215, 432]">
+                <Label id="lblSummary" width="852" height="176" vertAlign="top" horizAlign="center" wrap="true"/> <!-- video.summary -->
+            </Group>
+        </Group>
+    </children>
+</component>

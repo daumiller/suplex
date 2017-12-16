@@ -2,7 +2,7 @@
 ''' section SETUP
 '===================================================================================================================================
 ''' function SectionScreen_Create(key, title)
-''' return          section_screen assocarray, or invalid on error (check return value)
+''' return          section_screen assocarray, or invalid on error
 ''' parameter=key   key of section to load
 ''' parameter=title title of section to load, set to title bar
 ''' description     create and show section screen
@@ -11,6 +11,7 @@ function SectionScreen_Create(key, title)
         "screen"                  : CreateObject("roSGScreen"),
         "queue"                   : GlobalLoop().queue,
         "title"                   : title,
+        "Scroll"                  : SectionScreen_Scroll,
         "Handle_Message"          : SectionScreen_Handle_Message,
         "_Populate"               : SectionScreen_Populate,
         "_PressedKey"             : SectionScreen_PressedKey,
@@ -118,15 +119,37 @@ sub SectionScreen_PosterGrid_ItemSelected()
         if(m.media_container.viewGroup = "season") then child_title = m.title + ": " + child.title
         SectionScreen_Create(child.key, child_title)
     elseif(child.tagName = "Video") then
-        Print("PlaybackScreen_Create(" + child.key + ")")
+        Print("VideoScreen_Create(" + child.key + ")")
+        VideoScreen_Create(child.key, m.title)
     end if
 end sub
 
 '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+function SectionScreen_Scroll(offset as integer) as string
+    index = m.poster_grid.itemFocused
+    index += offset
+
+    available = m.media_container.children.Count()
+    while(index >= available) : index = index - available : end while
+    while(index <  0        ) : index = index + available : end while
+
+    m.poster_grid.jumpToItem = index
+    return m.media_container.children[index].key
+end function
+
 ' event: unhandled key pressed
 sub SectionScreen_PressedKey()
-    Print("Pressed Key: " + m.scene.pressedKey)
+    key = m.scene.pressedKey
+    if(key = "replay") then
+        m.Scroll(1)
+    elseif(key = "options") then
+        m.Scroll(12)
+    elseif(key = "play") then
+        m.Scroll(-1)
+    else
+        Print("Unhandled SectionScreen Key: " + key)
+    end if
 end sub
 
 '===================================================================================================================================
@@ -180,10 +203,17 @@ sub SectionScreen_Populate()
             poster_thumb = Plex_Path_Transcode_Image_Next(image_transcoder, poster_thumb)
         end if
 
+        title_prefix = ""
+        if(child.DoesExist("leafCount")) then
+            if(child.viewedLeafCount <> child.leafCount) then title_prefix = "• "
+        else
+            if((child.viewCount = invalid) or (child.viewCount = "0")) then title_prefix = "• "
+        end if
+
         child_content.SetFields({
             ' https://sdkdocs.roku.com/display/sdkdoc/PosterGrid#PosterGrid-DataBindings
             "HDGridPosterUrl"      : poster_thumb,
-            "ShortDescriptionLine1": child.title,
+            "ShortDescriptionLine1": title_prefix + child.title,
             "Description"          : child.key
         })
 

@@ -1,5 +1,5 @@
 '===================================================================================================================================
-''' section GLOBAL_LOOP
+''' section SETUP
 '===================================================================================================================================
 function GlobalLoop() as object
     globals = GetGlobalAA()
@@ -14,6 +14,7 @@ function GlobalLoop() as object
         "Run"          : GlobalLoop_Run,
         "Screen_Push"  : GlobalLoop_Screen_Push,
         "Screen_Pop"   : GlobalLoop_Screen_Pop,
+        "Current_Scene": GlobalLoop_Screen_Current_Scene,
         "Timer_Add"    : GlobalLoop_Timer_Add,
         "Timer_Remove" : GlobalLoop_Timer_Remove,
         "Socket_Add"   : GlobalLoop_Socket_Add,
@@ -27,6 +28,56 @@ function GlobalLoop() as object
     return this
 end function
 
+'===================================================================================================================================
+''' section SCREENS
+'===================================================================================================================================
+sub GlobalLoop_Screen_Push(screen as object)
+    m.screens.Push(screen)
+end sub
+
+sub GlobalLoop_Screen_Pop()
+    m.screens.Pop()
+
+    screen_top = m.screens.Peek()
+    if((screen_top <> invalid) and (screen_top.DoesExist("Reactivated"))) then screen_top.Reactivated()
+end sub
+
+function GlobalLoop_Screen_Current_Scene()
+    current_screen = m.screens.Peek()
+    if(current_screen = invalid) then return invalid
+    return current_screen.scene
+end function
+
+'===================================================================================================================================
+''' section TIMERS
+'===================================================================================================================================
+sub GlobalLoop_Timer_Add(timer as object)
+end sub
+
+function GlobalLoop_Timer_Remove(timer as object) as boolean
+end function
+
+'===================================================================================================================================
+''' section SOCKETS
+'===================================================================================================================================
+sub GlobalLoop_Socket_Add(socket as object)
+end sub
+
+function GlobalLoop_Socket_Remove(socket as object)
+end function
+
+'===================================================================================================================================
+''' section SERVERS
+'===================================================================================================================================
+sub GlobalLoop_Server_Add(server as object)
+end sub
+
+function GlobalLoop_Server_Remove(server as object) as boolean
+end function
+
+'===================================================================================================================================
+''' section EVENT_LOOP
+'===================================================================================================================================
 sub GlobalLoop_Run()
     if(m.screens.Count() = 0) then
         Print("ERROR: GlobalLoop_Run() -- entered with empty screen stack")
@@ -39,36 +90,6 @@ sub GlobalLoop_Run()
     end while
 end sub
 
-sub GlobalLoop_Screen_Push(screen as object)
-    m.screens.Push(screen)
-end sub
-
-sub GlobalLoop_Screen_Pop()
-    m.screens.Pop()
-
-    screen_top = m.screens.Peek()
-    if((screen_top <> invalid) and (screen_top.DoesExist("Reactivated"))) then screen_top.Reactivated()
-end sub
-
-sub GlobalLoop_Timer_Add(timer as object)
-end sub
-
-function GlobalLoop_Timer_Remove(timer as object) as boolean
-end function
-
-sub GlobalLoop_Socket_Add(socket as object)
-end sub
-
-function GlobalLoop_Socket_Remove(socket as object)
-end function
-
-sub GlobalLoop_Server_Add(server as object)
-end sub
-
-function GlobalLoop_Server_Remove(server as object) as boolean
-end function
-
-' - - -
 function GlobalLoop_Iterate(timeout_ms=0 as integer) as integer
     message = Wait(timeout_ms, m.queue)
     if(message <> invalid) ' if not expired

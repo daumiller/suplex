@@ -73,7 +73,7 @@ end sub
 
 ' event: unhandled key pressed
 sub HomeScreen_PressedKey()
-    Print("Pressed Key: " + m.scene.pressedKey)
+    Print("Unhandled HomeScreen Key: " + m.scene.pressedKey)
 end sub
 
 '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

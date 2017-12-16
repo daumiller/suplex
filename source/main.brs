@@ -107,13 +107,13 @@ sub PlaybackScreen_Create(key, time_start=0)
 end sub
 
 ' helper: guarantee a valid Plex server before proceeding
-sub GetPlex(ui_scene as object)
+sub GetPlex()
     server = Plex_Server_Default()
     if(server <> invalid) then
         Plex_Server_Current(server)
     else
         ' could just forward to ServerScreen here, but attempt zero-config first.
-        discovery = Plex_Server_Discover(ui_scene, true, 10000)
+        discovery = Plex_Server_Discover(GlobalLoop().Current_Scene(), true, 10000)
         if((discovery = invalid) or (discovery.Count() = 0)) then
             ' TODO: forward to ServerScreen; only allow exit with a Plex_Server_Current or out of the app
             Print("ERROR: No Plex servers found...")
@@ -132,13 +132,11 @@ sub GetPlex(ui_scene as object)
     end if
 end sub
 
-' TODO: media viewOffset and Duration, specified in milliseconds, are overflowing integers...
-
 sub Main()
     home_screen = HomeScreen_Create()
     home_screen.scene.SetFocus(true)
 
-    GetPlex(home_screen.scene)
+    GetPlex()
     Print("PLEX Server: " + Plex_Server_Serialize(Plex_Server_Current()))
 
     home_screen.Populate()
