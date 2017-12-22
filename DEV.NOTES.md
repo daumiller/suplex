@@ -1,5 +1,35 @@
 # suplex notes #
 
+## Bulk Transcode ##
+Target: Direct Play for Roku + Chrome
+    MP4, H.264, 
+* Roku only supports up to 1080 for H.264, but only supports H.265 on 4K devices. (VP9 is also 4K only, as well as DASH streaming only)
+* Roku
+    * H.264
+    * Up to 1920x1080
+    * MP4 Format
+    * Frame Rate: 24/25/30/50/60
+    * Streaming HLS m3u8/ts
+    * Profile: Main or High
+    * Level: 4.1 or 4.2
+    * Constrained VBR
+    * Video Bit Rate up to 10 MBit
+    * Key Frame Interval < 10s (<5 for live)
+    * **AAC**, AC3, MP3 (NOTE: Test **AAC** vs AC3, was sure one of these doesn't actually work.)
+    * "If content contains a surround sound track, AAC 2-channel stereo should be provided as a backup audio track"
+* https://sdkdocs.roku.com/display/sdkdoc/Trick+Mode+Support
+* https://github.com/sergey-dryabzhinsky/nginx-rtmp-module
+    * Will this work with multiple concurrent streams?
+* https://trac.ffmpeg.org/wiki/StreamingGuide
+* https://sdkdocs.roku.com/display/sdkdoc/Content+Meta-Data#ContentMeta-Data-PlaybackConfigurationAttributes
+    * xBifUrl
+
+* Transcode Library
+    * Have import wizard
+    * Only ahead-of-time transcoding; only direct-play streaming
+* Write Media Scanners (easy to create/modify, up-to-date)
+* Maybe pull Plex metadata
+
 ## top ##
 * GDM: https://github.com/NineWorlds/serenity-android/wiki/Good-Day-Mate
 
